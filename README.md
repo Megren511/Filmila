@@ -75,6 +75,46 @@ npm run dev
 npm run dev
 ```
 
+## Authentication System
+
+### Features
+- JWT-based authentication with access and refresh tokens
+- Role-based access control (Admin, Filmmaker, Viewer)
+- Secure password hashing with bcrypt
+- Email verification for new accounts
+- Password reset functionality
+- Session management with refresh tokens
+- Rate limiting for security
+- Protected routes based on user roles
+
+### User Roles
+- **Admin**: Full platform management and moderation
+- **Filmmaker**: Upload and manage films, access earnings dashboard
+- **Viewer**: Watch films, manage watchlist, and purchase content
+
+### Security Features
+- Password strength requirements
+- Email verification required
+- Token-based authentication
+- CORS protection
+- Rate limiting on authentication endpoints
+- Secure password reset flow
+- Session management and invalidation
+- Request sanitization and validation
+
+### API Endpoints
+
+#### Authentication
+```
+POST /api/auth/register     - Register new user
+POST /api/auth/login        - User login
+POST /api/auth/logout       - User logout
+GET  /api/auth/verify-email - Verify email address
+POST /api/auth/forgot-password    - Request password reset
+POST /api/auth/reset-password     - Reset password
+POST /api/auth/refresh-token      - Refresh access token
+```
+
 ## Contributing
 
 1. Fork the repository
