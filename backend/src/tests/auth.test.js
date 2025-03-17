@@ -1,15 +1,24 @@
 const request = require('supertest');
 const app = require('../app');
-const { pool } = require('../db/config');
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { setupTestDB, teardownTestDB, clearDatabase } = require('./testConfig');
+const User = require('../models/user.model');
+const RefreshToken = require('../models/refreshToken.model');
+const Session = require('../models/session.model');
 
 describe('Authentication Endpoints', () => {
+  beforeAll(async () => {
+    await setupTestDB();
+  });
+
+  afterAll(async () => {
+    await teardownTestDB();
+  });
+
   beforeEach(async () => {
-    // Clear users table before each test
-    await pool.query('DELETE FROM users');
-    await pool.query('DELETE FROM refresh_tokens');
-    await pool.query('DELETE FROM sessions');
+    await clearDatabase();
   });
 
   describe('POST /api/auth/register', () => {
@@ -63,11 +72,14 @@ describe('Authentication Endpoints', () => {
       // Create a verified user before each login test
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash('Test123!@#', salt);
-      await pool.query(
-        `INSERT INTO users (email, password_hash, first_name, last_name, role, email_verified)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        ['test@filmila.com', passwordHash, 'Test', 'User', 'viewer', true]
-      );
+      await User.create({
+        email: 'test@filmila.com',
+        passwordHash,
+        firstName: 'Test',
+        lastName: 'User',
+        role: 'viewer',
+        emailVerified: true
+      });
     });
 
     it('should login successfully with correct credentials', async () => {
@@ -98,9 +110,9 @@ describe('Authentication Endpoints', () => {
 
     it('should not login unverified user', async () => {
       // Create unverified user
-      await pool.query(
-        `UPDATE users SET email_verified = false WHERE email = $1`,
-        ['test@filmila.com']
+      await User.findOneAndUpdate(
+        { email: 'test@filmila.com' },
+        { emailVerified: false }
       );
 
       const res = await request(app)
@@ -128,11 +140,12 @@ describe('Authentication Endpoints', () => {
       // Create unverified user with verification token
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash('Test123!@#', salt);
-      await pool.query(
-        `INSERT INTO users (email, password_hash, verification_token, email_verified)
-         VALUES ($1, $2, $3, $4)`,
-        ['test@filmila.com', passwordHash, verificationToken, false]
-      );
+      await User.create({
+        email: 'test@filmila.com',
+        passwordHash,
+        verificationToken,
+        emailVerified: false
+      });
     });
 
     it('should verify email with valid token', async () => {
@@ -143,11 +156,8 @@ describe('Authentication Endpoints', () => {
       expect(res.body).toHaveProperty('message', 'Email verified successfully');
 
       // Check database
-      const result = await pool.query(
-        'SELECT email_verified FROM users WHERE email = $1',
-        ['test@filmila.com']
-      );
-      expect(result.rows[0].email_verified).toBe(true);
+      const user = await User.findOne({ email: 'test@filmila.com' });
+      expect(user.emailVerified).toBe(true);
     });
 
     it('should reject invalid verification token', async () => {
@@ -164,11 +174,10 @@ describe('Authentication Endpoints', () => {
       // Create user
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash('Test123!@#', salt);
-      await pool.query(
-        `INSERT INTO users (email, password_hash)
-         VALUES ($1, $2)`,
-        ['test@filmila.com', passwordHash]
-      );
+      await User.create({
+        email: 'test@filmila.com',
+        passwordHash
+      });
     });
 
     it('should send reset email for existing user', async () => {
@@ -180,11 +189,8 @@ describe('Authentication Endpoints', () => {
       expect(res.body).toHaveProperty('message');
 
       // Check database for reset token
-      const result = await pool.query(
-        'SELECT reset_password_token FROM users WHERE email = $1',
-        ['test@filmila.com']
-      );
-      expect(result.rows[0].reset_password_token).toBeTruthy();
+      const user = await User.findOne({ email: 'test@filmila.com' });
+      expect(user.resetPasswordToken).toBeTruthy();
     });
 
     it('should not reveal if email exists', async () => {
@@ -346,6 +352,4 @@ describe('Authentication Endpoints', () => {
   });
 });
 
-afterAll(async () => {
-  await pool.end();
-});
+

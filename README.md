@@ -115,6 +115,71 @@ POST /api/auth/reset-password     - Reset password
 POST /api/auth/refresh-token      - Refresh access token
 ```
 
+## Deployment
+
+### Render Deployment (Recommended)
+
+1. Create a Render account at https://render.com
+
+2. Connect your GitHub repository to Render
+
+3. Create a new Web Service for the backend:
+   - Choose the repository
+   - Select the `main` branch
+   - Set name as `filmila-api`
+   - Set build command: `cd backend && npm install && npm run build`
+   - Set start command: `cd backend && npm start`
+   - Add environment variables:
+     ```
+     NODE_ENV=production
+     DATABASE_URL=your_postgres_url
+     JWT_SECRET=your_jwt_secret
+     AWS_ACCESS_KEY_ID=your_aws_key
+     AWS_SECRET_ACCESS_KEY=your_aws_secret
+     AWS_REGION=us-east-1
+     S3_BUCKET_NAME=your_bucket_name
+     CLOUDFRONT_URL=your_cloudfront_url
+     STRIPE_SECRET_KEY=your_stripe_key
+     STRIPE_WEBHOOK_SECRET=your_webhook_secret
+     ```
+
+4. Create a new Static Site for the frontend:
+   - Choose the repository
+   - Set name as `filmila-web`
+   - Set build command: `cd frontend && npm install && npm run build`
+   - Set publish directory: `frontend/build`
+   - Add environment variables:
+     ```
+     REACT_APP_API_URL=https://filmila-api.onrender.com/api
+     REACT_APP_CLOUDFRONT_URL=your_cloudfront_url
+     ```
+
+5. The deployment will start automatically. Your services will be available at:
+   - Backend API: `https://filmila-api.onrender.com`
+   - Frontend: `https://filmila-web.onrender.com`
+
+### Alternative Deployment Options
+
+1. **AWS (Alternative 1)**
+   - Deploy backend to Elastic Beanstalk
+   - Host frontend on S3 + CloudFront
+   - Use RDS for PostgreSQL
+   - Manage with AWS CodePipeline
+
+2. **DigitalOcean (Alternative 2)**
+   - Deploy using App Platform
+   - Use Managed Databases for PostgreSQL
+   - Set up automatic deployments from GitHub
+
+### Important Notes
+
+1. Always set up proper environment variables
+2. Enable CORS for your domain
+3. Set up SSL certificates
+4. Configure proper security groups
+5. Set up monitoring and logging
+6. Configure auto-scaling if needed
+
 ## Contributing
 
 1. Fork the repository

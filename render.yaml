@@ -1,0 +1,48 @@
+services:
+  # Backend API Service
+  - type: web
+    name: filmila-api
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: DATABASE_URL
+        fromDatabase:
+          name: filmila-db
+          property: connectionString
+      - key: DATABASE_SSL
+        value: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRY
+        value: 24h
+      - key: FRONTEND_URL
+        value: https://filmila-web.onrender.com
+      - key: API_PREFIX
+        value: /api
+
+  # Frontend Static Site
+  - type: web
+    name: filmila-web
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://filmila-api.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+databases:
+  - name: filmila-db
+    databaseName: filmila
+    user: filmila_admin
+    plan: free

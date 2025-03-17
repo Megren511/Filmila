@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const { pool } = require('../db/config');
+const EmailLog = require('../models/emailLog.model');
 
 class EmailService {
   constructor() {
@@ -26,22 +26,24 @@ class EmailService {
       const info = await this.transporter.sendMail(mailOptions);
 
       // Log email
-      await pool.query(
-        `INSERT INTO email_logs (recipient, subject, message_id, status)
-         VALUES ($1, $2, $3, $4)`,
-        [to, subject, info.messageId, 'sent']
-      );
+      await EmailLog.create({
+        recipient: to,
+        subject,
+        messageId: info.messageId,
+        status: 'sent'
+      });
 
       return info;
     } catch (error) {
       console.error('Email sending error:', error);
 
       // Log failed attempt
-      await pool.query(
-        `INSERT INTO email_logs (recipient, subject, error, status)
-         VALUES ($1, $2, $3, $4)`,
-        [to, subject, error.message, 'failed']
-      );
+      await EmailLog.create({
+        recipient: to,
+        subject,
+        error: error.message,
+        status: 'failed'
+      });
 
       throw error;
     }

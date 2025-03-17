@@ -16,10 +16,7 @@ class AuthService {
   // Register new user
   async register(userData) {
     try {
-      const response = await this.api.post('/auth/register', {
-        ...userData,
-        recaptchaToken: await this.getRecaptchaToken()
-      });
+      const response = await this.api.post('/auth/register', userData);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -31,8 +28,7 @@ class AuthService {
     try {
       const response = await this.api.post('/auth/login', {
         ...credentials,
-        deviceName: this.getDeviceName(),
-        recaptchaToken: await this.getRecaptchaToken()
+        deviceName: this.getDeviceName()
       });
 
       if (response.data.token) {
@@ -141,10 +137,7 @@ class AuthService {
   // Request password reset
   async forgotPassword(email) {
     try {
-      const response = await this.api.post('/auth/forgot-password', {
-        email,
-        recaptchaToken: await this.getRecaptchaToken()
-      });
+      const response = await this.api.post('/auth/forgot-password', { email });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -155,8 +148,7 @@ class AuthService {
   async resetPassword(token, newPassword) {
     try {
       const response = await this.api.post(`/auth/reset-password/${token}`, {
-        password: newPassword,
-        recaptchaToken: await this.getRecaptchaToken()
+        password: newPassword
       });
       return response.data;
     } catch (error) {
@@ -200,7 +192,7 @@ class AuthService {
     localStorage.setItem('session', JSON.stringify(session));
   }
 
-  // Clear all auth data
+  // Clear auth data
   clearAuth() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -210,78 +202,23 @@ class AuthService {
     }
   }
 
-  // Check if user is authenticated
-  isAuthenticated() {
-    const token = this.getToken();
-    const session = this.getSession();
-    return !!(token && session);
-  }
-
   // Get device name for session tracking
   getDeviceName() {
-    const platform = navigator.platform;
-    const userAgent = navigator.userAgent;
-    const browserName = this.getBrowserName(userAgent);
-    return `${browserName} on ${platform}`;
+    return window.navigator.userAgent;
   }
 
-  // Get browser name from user agent
-  getBrowserName(userAgent) {
-    if (userAgent.includes('Firefox')) return 'Firefox';
-    if (userAgent.includes('Chrome')) return 'Chrome';
-    if (userAgent.includes('Safari')) return 'Safari';
-    if (userAgent.includes('Edge')) return 'Edge';
-    if (userAgent.includes('Opera')) return 'Opera';
-    return 'Unknown Browser';
-  }
-
-  // Get reCAPTCHA token
-  async getRecaptchaToken() {
-    if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_SKIP_RECAPTCHA === 'true') {
-      return 'development-mode';
-    }
-
-    try {
-      return await window.grecaptcha.execute(
-        process.env.REACT_APP_RECAPTCHA_SITE_KEY,
-        { action: 'submit' }
-      );
-    } catch (error) {
-      console.error('reCAPTCHA error:', error);
-      throw new Error('Failed to get reCAPTCHA token');
-    }
-  }
-
-  // Error handler
+  // Handle API errors
   handleError(error) {
     if (error.response) {
       // Server responded with error
-      return {
-        message: error.response.data.error || 'An error occurred',
-        status: error.response.status
-      };
-    } else if (error.request) {
+      return new Error(error.response.data.message || 'An error occurred');
+    }
+    if (error.request) {
       // Request made but no response
-      return {
-        message: 'No response from server',
-        status: 503
-      };
-    } else {
-      // Request setup error
-      return {
-        message: error.message || 'Request failed',
-        status: 500
-      };
+      return new Error('No response from server');
     }
-  }
-
-  // Add auth header to requests
-  setAuthHeader(config) {
-    const token = this.getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+    // Request setup error
+    return new Error('Failed to make request');
   }
 }
 
@@ -290,8 +227,14 @@ const authService = new AuthService();
 
 // Add auth header interceptor
 authService.api.interceptors.request.use(
-  config => authService.setAuthHeader(config),
-  error => Promise.reject(error)
+  (config) => {
+    const token = authService.getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
 );
 
 export default authService;

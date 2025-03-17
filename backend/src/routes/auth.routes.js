@@ -1,91 +1,214 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/auth.controller');
-const { validateRequest } = require('../middleware/validator');
-const { rateLimiter } = require('../middleware/rateLimiter');
-const { authenticateToken } = require('../middleware/auth');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { User, Session, RefreshToken } = require('../models');
+const config = require('../config');
+const auth = require('../middleware/auth');
 
-// Rate limiting configurations
-const loginLimiter = rateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts
-  message: 'Too many login attempts, please try again later'
+// Register new user
+router.post('/register', async (req, res) => {
+  try {
+    const { email, password, first_name, last_name } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+
+    // Create user
+    const user = await User.create({
+      email,
+      password_hash,
+      first_name,
+      last_name,
+      role: 'user',
+      email_verified: false
+    });
+
+    // Create session
+    const session = await Session.create({
+      user_id: user.id,
+      device_info: req.headers['user-agent'],
+      ip_address: req.ip
+    });
+
+    // Generate tokens
+    const token = jwt.sign(
+      { id: user.id, session_id: session.id },
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiry }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: user.id, type: 'refresh' },
+      config.jwt.secret,
+      { expiresIn: '7d' }
+    );
+
+    // Store refresh token
+    await RefreshToken.create({
+      token: refreshToken,
+      user_id: user.id,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+    });
+
+    res.status(201).json({
+      token,
+      refresh_token: refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error registering user', error: error.message });
+  }
 });
 
-const registrationLimiter = rateLimiter({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // 3 attempts
-  message: 'Too many registration attempts, please try again later'
+// Login user
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user
+    const user = await User.findByEmail(email);
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    if (!isValidPassword) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Create session
+    const session = await Session.create({
+      user_id: user.id,
+      device_info: req.headers['user-agent'],
+      ip_address: req.ip
+    });
+
+    // Generate tokens
+    const token = jwt.sign(
+      { id: user.id, session_id: session.id },
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiry }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: user.id, type: 'refresh' },
+      config.jwt.secret,
+      { expiresIn: '7d' }
+    );
+
+    // Store refresh token
+    await RefreshToken.create({
+      token: refreshToken,
+      user_id: user.id,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+    });
+
+    res.json({
+      token,
+      refresh_token: refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error logging in', error: error.message });
+  }
 });
 
-// Registration
-router.post('/register',
-  registrationLimiter,
-  validateRequest({
-    body: {
-      email: { type: 'string', required: true },
-      password: { type: 'string', required: true },
-      firstName: { type: 'string', required: true },
-      lastName: { type: 'string', required: true }
+// Refresh token
+router.post('/refresh', async (req, res) => {
+  try {
+    const { refresh_token } = req.body;
+    if (!refresh_token) {
+      return res.status(400).json({ message: 'Refresh token is required' });
     }
-  }),
-  authController.register
-);
 
-// Login
-router.post('/login',
-  loginLimiter,
-  validateRequest({
-    body: {
-      email: { type: 'string', required: true },
-      password: { type: 'string', required: true }
+    // Verify refresh token
+    const decoded = jwt.verify(refresh_token, config.jwt.secret);
+    if (decoded.type !== 'refresh') {
+      return res.status(401).json({ message: 'Invalid refresh token' });
     }
-  }),
-  authController.login
-);
 
-// Email verification
-router.get('/verify-email/:token', authController.verifyEmail);
-
-// Password reset request
-router.post('/forgot-password',
-  validateRequest({
-    body: {
-      email: { type: 'string', required: true }
+    // Check if refresh token exists and is valid
+    const refreshTokenDoc = await RefreshToken.findByToken(refresh_token);
+    if (!refreshTokenDoc) {
+      return res.status(401).json({ message: 'Invalid refresh token' });
     }
-  }),
-  authController.forgotPassword
-);
 
-// Password reset
-router.post('/reset-password/:token',
-  validateRequest({
-    body: {
-      password: { type: 'string', required: true }
-    }
-  }),
-  authController.resetPassword
-);
+    // Create new session
+    const session = await Session.create({
+      user_id: decoded.id,
+      device_info: req.headers['user-agent'],
+      ip_address: req.ip
+    });
 
-// Token refresh
-router.post('/refresh-token',
-  validateRequest({
-    body: {
-      refreshToken: { type: 'string', required: true }
+    // Generate new tokens
+    const token = jwt.sign(
+      { id: decoded.id, session_id: session.id },
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiry }
+    );
+
+    const newRefreshToken = jwt.sign(
+      { id: decoded.id, type: 'refresh' },
+      config.jwt.secret,
+      { expiresIn: '7d' }
+    );
+
+    // Store new refresh token
+    await RefreshToken.create({
+      token: newRefreshToken,
+      user_id: decoded.id,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+    });
+
+    // Invalidate old refresh token
+    await RefreshToken.delete(refreshTokenDoc.id);
+
+    res.json({
+      token,
+      refresh_token: newRefreshToken
+    });
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid refresh token' });
     }
-  }),
-  authController.refreshToken
-);
+    res.status(500).json({ message: 'Error refreshing token', error: error.message });
+  }
+});
 
 // Logout
-router.post('/logout',
-  authenticateToken,
-  validateRequest({
-    body: {
-      refreshToken: { type: 'string', required: true }
-    }
-  }),
-  authController.logout
-);
+router.post('/logout', auth, async (req, res) => {
+  try {
+    // Deactivate current session
+    await Session.deactivate(req.session.id);
+    
+    // Invalidate refresh tokens for this user
+    await RefreshToken.invalidateAllForUser(req.user.id);
+
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error logging out', error: error.message });
+  }
+});
 
 module.exports = router;
