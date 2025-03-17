@@ -1,11 +1,10 @@
 require('dotenv').config();
-const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const config = require('./config');
 const db = require('./config/database');
 
-const app = express();
+const app = require('./app');
 
 // Middleware
 app.use(helmet());
@@ -39,9 +38,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-const port = config.port || 8080;
+const port = process.env.PORT || 8080;
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
-  console.log(`API prefix: ${config.apiPrefix}`);
-  console.log(`Environment: ${config.env}`);
+  console.log(`API prefix: ${process.env.API_PREFIX || '/api'}`);
+  console.log(`Environment: ${process.env.NODE_ENV}`);
 });

@@ -25,6 +25,16 @@ services:
         value: https://filmila-web.onrender.com
       - key: API_PREFIX
         value: /api
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: eu-north-1
+      - key: AWS_S3_BUCKET
+        value: filmila-videos
+      - key: CLOUDFRONT_DOMAIN
+        value: d1k0enfou8eft6.cloudfront.net
 
   # Frontend Static Site
   - type: web
@@ -36,6 +46,8 @@ services:
     envVars:
       - key: REACT_APP_API_URL
         value: https://filmila-api.onrender.com/api
+      - key: REACT_APP_CLOUDFRONT_DOMAIN
+        value: d1k0enfou8eft6.cloudfront.net
     routes:
       - type: rewrite
         source: /*
