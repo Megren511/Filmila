@@ -5,7 +5,7 @@ services:
     env: node
     branch: clean-deploy
     rootDirectory: backend
-    buildCommand: npm ci --production=false && npm run migrate
+    buildCommand: npm ci --production=false && npm run build && npm run migrate
     startCommand: npm start
     envVars:
       - key: NODE_ENV
