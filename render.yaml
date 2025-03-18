@@ -3,25 +3,25 @@ services:
   - type: web
     name: filmila-api
     env: node
+    branch: clean-deploy
     buildCommand: |
-      pwd
+      echo "Current directory: $(pwd)"
+      echo "Directory contents:"
       ls -la
-      if [ -f "backend/package.json" ]; then
-        cd backend
-        npm ci --production=false
-        npm run migrate
-      else
-        echo "Error: backend/package.json not found"
-        exit 1
+      echo "Checking for backend directory..."
+      if [ ! -d "backend" ]; then
+        echo "Creating backend symlink..."
+        ln -s . backend
       fi
+      cd backend || exit 1
+      echo "Installing dependencies..."
+      npm ci --production=false
+      echo "Running migrations..."
+      npm run migrate
     startCommand: |
-      if [ -f "backend/package.json" ]; then
-        cd backend
-        npm start
-      else
-        echo "Error: backend/package.json not found"
-        exit 1
-      fi
+      echo "Starting backend service..."
+      cd backend || exit 1
+      NODE_ENV=production npm start
     envVars:
       - key: NODE_ENV
         value: production
