@@ -6,6 +6,8 @@ services:
     rootDirectory: backend
     buildCommand: |
       cd ../frontend && npm ci --production=false && npm run build
+      mkdir -p frontend/build
+      cp -r ../frontend/build/* frontend/build/
       cd ../backend && npm ci --production=false && npm run build && npm run migrate
     startCommand: npm start
     envVars:

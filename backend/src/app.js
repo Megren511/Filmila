@@ -42,12 +42,27 @@ app.use('/api/videos', authMiddleware, videoRoutes);
 
 // Get the absolute path to the frontend build directory
 const frontendBuildPath = process.env.NODE_ENV === 'production'
-  ? path.join(__dirname, '../../frontend/build')
+  ? '/opt/render/project/src/backend/frontend/build'
   : path.join(__dirname, '../../frontend/build');
 
+console.log('Current working directory:', process.cwd());
 console.log('Frontend build path:', frontendBuildPath);
 console.log('__dirname:', __dirname);
 console.log('Absolute path:', path.resolve(frontendBuildPath));
+
+// List directory contents in production
+if (process.env.NODE_ENV === 'production') {
+  const fs = require('fs');
+  try {
+    console.log('Listing /opt/render/project/src contents:');
+    console.log(fs.readdirSync('/opt/render/project/src'));
+    
+    console.log('Listing backend directory contents:');
+    console.log(fs.readdirSync('/opt/render/project/src/backend'));
+  } catch (err) {
+    console.error('Error listing directory:', err);
+  }
+}
 
 // Serve static files from the React frontend app
 app.use(express.static(frontendBuildPath));
@@ -58,14 +73,23 @@ app.get('*', function(req, res) {
   console.log('Request URL:', req.url);
   console.log('Serving index.html from:', indexPath);
   console.log('File exists:', require('fs').existsSync(indexPath));
+  
   if (!require('fs').existsSync(indexPath)) {
     console.error('index.html not found at:', indexPath);
     return res.status(500).json({ 
       message: `index.html not found at: ${indexPath}`,
-      error: { frontendBuildPath, indexPath }
+      error: { frontendBuildPath, indexPath, cwd: process.cwd() }
     });
   }
-  res.sendFile(indexPath);
+  
+  try {
+    const fileContents = require('fs').readFileSync(indexPath, 'utf8');
+    console.log('index.html contents:', fileContents.substring(0, 200) + '...');
+    res.send(fileContents);
+  } catch (err) {
+    console.error('Error reading index.html:', err);
+    res.status(500).json({ message: 'Error reading index.html', error: err });
+  }
 });
 
 // Error handling
