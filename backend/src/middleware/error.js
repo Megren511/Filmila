@@ -1,6 +1,7 @@
 // Error handling middleware
 const errorHandler = (err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error:', err);
+  console.error('Stack:', err.stack);
 
   // Handle specific error types
   if (err.name === 'ValidationError') {
@@ -18,8 +19,8 @@ const errorHandler = (err, req, res, next) => {
 
   // Default error response
   res.status(500).json({
-    message: 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    message: err.message || 'Internal Server Error',
+    error: process.env.NODE_ENV === 'development' ? err : {}
   });
 };
 
