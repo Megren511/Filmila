@@ -42,10 +42,12 @@ app.use('/api/videos', authMiddleware, videoRoutes);
 
 // Get the absolute path to the frontend build directory
 const frontendBuildPath = process.env.NODE_ENV === 'production'
-  ? '/opt/render/project/src/frontend/build'
-  : path.join(__dirname, '../..', 'frontend/build');
+  ? path.join(__dirname, '../../frontend/build')
+  : path.join(__dirname, '../../frontend/build');
 
 console.log('Frontend build path:', frontendBuildPath);
+console.log('__dirname:', __dirname);
+console.log('Absolute path:', path.resolve(frontendBuildPath));
 
 // Serve static files from the React frontend app
 app.use(express.static(frontendBuildPath));
@@ -53,7 +55,9 @@ app.use(express.static(frontendBuildPath));
 // Handle React routing, return all requests to React app
 app.get('*', function(req, res) {
   const indexPath = path.join(frontendBuildPath, 'index.html');
+  console.log('Request URL:', req.url);
   console.log('Serving index.html from:', indexPath);
+  console.log('File exists:', require('fs').existsSync(indexPath));
   if (!require('fs').existsSync(indexPath)) {
     console.error('index.html not found at:', indexPath);
     return res.status(500).json({ 
