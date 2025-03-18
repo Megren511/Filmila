@@ -41,34 +41,35 @@ app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/videos', authMiddleware, videoRoutes);
 
 // Get the absolute path to the frontend build directory
-const frontendBuildPath = process.env.NODE_ENV === 'production'
-  ? path.join(process.cwd(), 'frontend/build')
-  : path.join(__dirname, '../../frontend/build');
+const frontendBuildPath = path.join(process.cwd(), 'frontend/build');
 
+console.log('Environment:', process.env.NODE_ENV);
 console.log('Current working directory:', process.cwd());
 console.log('Frontend build path:', frontendBuildPath);
 console.log('__dirname:', __dirname);
 console.log('Absolute path:', path.resolve(frontendBuildPath));
 
-// List directory contents in production
-if (process.env.NODE_ENV === 'production') {
-  const fs = require('fs');
-  try {
-    console.log('Listing current directory contents:');
-    console.log(fs.readdirSync(process.cwd()));
+// List directory contents
+const fs = require('fs');
+try {
+  console.log('\nListing current directory contents:');
+  console.log(fs.readdirSync(process.cwd()));
+  
+  if (fs.existsSync('frontend')) {
+    console.log('\nListing frontend directory contents:');
+    console.log(fs.readdirSync('frontend'));
     
-    if (fs.existsSync('frontend')) {
-      console.log('Listing frontend directory contents:');
-      console.log(fs.readdirSync('frontend'));
-      
-      if (fs.existsSync('frontend/build')) {
-        console.log('Listing frontend/build directory contents:');
-        console.log(fs.readdirSync('frontend/build'));
-      }
+    if (fs.existsSync('frontend/build')) {
+      console.log('\nListing frontend/build directory contents:');
+      console.log(fs.readdirSync('frontend/build'));
+    } else {
+      console.error('\nfrontend/build directory does not exist');
     }
-  } catch (err) {
-    console.error('Error listing directory:', err);
+  } else {
+    console.error('\nfrontend directory does not exist');
   }
+} catch (err) {
+  console.error('Error listing directory:', err);
 }
 
 // Serve static files from the React frontend app
@@ -77,20 +78,25 @@ app.use(express.static(frontendBuildPath));
 // Handle React routing, return all requests to React app
 app.get('*', function(req, res) {
   const indexPath = path.join(frontendBuildPath, 'index.html');
-  console.log('Request URL:', req.url);
+  console.log('\nRequest URL:', req.url);
   console.log('Serving index.html from:', indexPath);
-  console.log('File exists:', require('fs').existsSync(indexPath));
+  console.log('File exists:', fs.existsSync(indexPath));
   
-  if (!require('fs').existsSync(indexPath)) {
+  if (!fs.existsSync(indexPath)) {
     console.error('index.html not found at:', indexPath);
     return res.status(500).json({ 
       message: `index.html not found at: ${indexPath}`,
-      error: { frontendBuildPath, indexPath, cwd: process.cwd() }
+      error: { 
+        frontendBuildPath, 
+        indexPath, 
+        cwd: process.cwd(),
+        dirContents: fs.existsSync(frontendBuildPath) ? fs.readdirSync(frontendBuildPath) : 'directory not found'
+      }
     });
   }
   
   try {
-    const fileContents = require('fs').readFileSync(indexPath, 'utf8');
+    const fileContents = fs.readFileSync(indexPath, 'utf8');
     console.log('index.html contents:', fileContents.substring(0, 200) + '...');
     res.send(fileContents);
   } catch (err) {

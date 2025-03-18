@@ -5,16 +5,46 @@ services:
     env: node
     rootDirectory: backend
     buildCommand: |
+      echo "Starting build process..."
       echo "Current directory: $PWD"
       ls -la
-      cd ../frontend && npm ci --production=false && npm run build
-      cd ../backend
+      
+      echo "\nBuilding frontend..."
+      cd ../frontend
+      echo "Frontend directory: $PWD"
       ls -la
+      npm ci --production=false
+      npm run build
+      echo "Frontend build complete. Build directory contents:"
+      ls -la build
+      
+      echo "\nPreparing backend..."
+      cd ../backend
+      echo "Backend directory: $PWD"
+      ls -la
+      
+      echo "\nCopying frontend build..."
+      rm -rf frontend/build
       mkdir -p frontend/build
-      cp -r ../frontend/build/* frontend/build/
+      cp -rv ../frontend/build/* frontend/build/
+      echo "Frontend build copied. Contents:"
       ls -la frontend/build
-      npm ci --production=false && npm run build && npm run migrate
-    startCommand: npm start
+      
+      echo "\nInstalling backend dependencies..."
+      npm ci --production=false
+      npm run build
+      npm run migrate
+      
+      echo "\nFinal directory structure:"
+      pwd
+      ls -R
+    startCommand: |
+      echo "Starting server from directory:"
+      pwd
+      ls -la
+      echo "\nFrontend build location:"
+      ls -la frontend/build
+      npm start
     envVars:
       - key: NODE_ENV
         value: production
