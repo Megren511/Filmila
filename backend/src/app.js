@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const rateLimit = require('express-rate-limit');
 const { db } = require('./db');
 const authRoutes = require('./routes/auth.routes');
@@ -34,10 +35,18 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/videos', authMiddleware, videoRoutes);
+
+// Serve static files from the React frontend app
+app.use(express.static(path.join(__dirname, '../../frontend/build')));
+
+// Handle React routing, return all requests to React app
+app.get('*', function(req, res) {
+  res.sendFile(path.join(__dirname, '../../frontend/build', 'index.html'));
+});
 
 // Error handling
 app.use(errorHandler);

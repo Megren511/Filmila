@@ -1,19 +1,22 @@
 services:
   # Backend API Service
   - type: web
-    name: filmila-api
+    name: filmila
     env: node
-    branch: clean-deploy
-    rootDirectory: backend
-    buildCommand: npm ci --production=false && npm run build && npm run migrate
-    startCommand: npm start
+    rootDirectory: .
+    buildCommand: |
+      cd frontend && npm ci --production=false && npm run build && cd ..
+      cd backend && npm ci --production=false && npm run build && npm run migrate
+    startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 8080
       - key: DATABASE_URL
-        value: postgresql://filmila_db_user:0KPw6xRyDXmM0nG7Zy90R7T7hOm8dxbh@dpg-cv91v09c1ekc73e2v57g-a.singapore-postgres.render.com/filmila_db
+        fromDatabase:
+          name: filmila-db
+          property: connectionString
       - key: DATABASE_SSL
         value: true
       - key: JWT_SECRET
@@ -53,3 +56,8 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+
+databases:
+  - name: filmila-db
+    plan: free
+    ipAllowList: []
