@@ -13,7 +13,7 @@ services:
       echo "Frontend directory: $PWD"
       ls -la
       npm ci --production=false
-      npm run build
+      CI=false npm run build
       echo "Frontend build complete. Build directory contents:"
       ls -la build
       
@@ -27,33 +27,36 @@ services:
       npm run build
       npm run migrate
       
-      echo "\nCopying frontend build..."
-      cd ..
-      cp -rv frontend/build backend/public
-      echo "Frontend build copied. Contents:"
-      ls -la backend/public
+      echo "\nCreating public directory..."
+      mkdir -p public
+      echo "Copying frontend build..."
+      cp -rv ../frontend/build/* public/
+      echo "Frontend build copied. Contents of public directory:"
+      ls -la public
       
       echo "\nFinal directory structure:"
-      ls -R backend
+      pwd
+      echo "Current directory contents:"
+      ls -la
+      echo "Public directory contents:"
+      ls -la public
     startCommand: |
       echo "Starting server from directory:"
       pwd
       ls -la
       echo "\nPublic directory contents:"
       ls -la public
-      npm start
+      node dist/app.js
     rootDirectory: backend
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 8080
+      - key: DATABASE_SSL
+        value: true
       - key: DATABASE_URL
         fromDatabase:
           name: filmila-db
           property: connectionString
-      - key: DATABASE_SSL
-        value: true
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRY

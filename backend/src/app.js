@@ -41,7 +41,7 @@ app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/videos', authMiddleware, videoRoutes);
 
 // Get the absolute path to the frontend build directory
-const publicPath = path.join(process.cwd(), 'public');
+const publicPath = path.join(__dirname, '../public');
 
 console.log('Environment:', process.env.NODE_ENV);
 console.log('Current working directory:', process.cwd());
@@ -55,11 +55,17 @@ try {
   console.log('\nListing current directory contents:');
   console.log(fs.readdirSync(process.cwd()));
   
-  if (fs.existsSync('public')) {
+  if (fs.existsSync(publicPath)) {
     console.log('\nListing public directory contents:');
-    console.log(fs.readdirSync('public'));
+    console.log(fs.readdirSync(publicPath));
   } else {
-    console.error('\npublic directory does not exist');
+    console.error('\npublic directory does not exist at:', publicPath);
+    // Try to list parent directory
+    const parentDir = path.dirname(publicPath);
+    if (fs.existsSync(parentDir)) {
+      console.log('\nListing parent directory contents:', parentDir);
+      console.log(fs.readdirSync(parentDir));
+    }
   }
 } catch (err) {
   console.error('Error listing directory:', err);
@@ -83,7 +89,9 @@ app.get('*', function(req, res) {
         publicPath, 
         indexPath, 
         cwd: process.cwd(),
-        dirContents: fs.existsSync(publicPath) ? fs.readdirSync(publicPath) : 'directory not found'
+        dirname: __dirname,
+        dirContents: fs.existsSync(publicPath) ? fs.readdirSync(publicPath) : 'directory not found',
+        parentContents: fs.existsSync(path.dirname(publicPath)) ? fs.readdirSync(path.dirname(publicPath)) : 'parent directory not found'
       }
     });
   }
