@@ -27,26 +27,21 @@ services:
       npm run build
       npm run migrate
       
-      echo "\nCreating public directory..."
-      mkdir -p public
-      echo "Copying frontend build..."
-      cp -rv ../frontend/build/* public/
-      echo "Frontend build copied. Contents of public directory:"
-      ls -la public
-      
       echo "\nFinal directory structure:"
+      cd ..
       pwd
-      echo "Current directory contents:"
       ls -la
-      echo "Public directory contents:"
-      ls -la public
+      echo "\nFrontend build contents:"
+      ls -la frontend/build
     startCommand: |
       echo "Starting server from directory:"
       pwd
       ls -la
-      echo "\nPublic directory contents:"
-      ls -la public
-      node dist/app.js
+      echo "\nParent directory contents:"
+      ls -la ..
+      echo "\nFrontend build contents:"
+      ls -la ../frontend/build
+      node src/app.js
     rootDirectory: backend
     envVars:
       - key: NODE_ENV
