@@ -40,12 +40,28 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/videos', authMiddleware, videoRoutes);
 
+// Get the absolute path to the frontend build directory
+const frontendBuildPath = process.env.NODE_ENV === 'production'
+  ? '/opt/render/project/src/frontend/build'
+  : path.join(__dirname, '../..', 'frontend/build');
+
+console.log('Frontend build path:', frontendBuildPath);
+
 // Serve static files from the React frontend app
-app.use(express.static(path.join(__dirname, '../..', 'frontend/build')));
+app.use(express.static(frontendBuildPath));
 
 // Handle React routing, return all requests to React app
 app.get('*', function(req, res) {
-  res.sendFile(path.join(__dirname, '../..', 'frontend/build', 'index.html'));
+  const indexPath = path.join(frontendBuildPath, 'index.html');
+  console.log('Serving index.html from:', indexPath);
+  if (!require('fs').existsSync(indexPath)) {
+    console.error('index.html not found at:', indexPath);
+    return res.status(500).json({ 
+      message: `index.html not found at: ${indexPath}`,
+      error: { frontendBuildPath, indexPath }
+    });
+  }
+  res.sendFile(indexPath);
 });
 
 // Error handling
