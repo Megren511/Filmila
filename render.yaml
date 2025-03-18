@@ -4,15 +4,24 @@ services:
     name: filmila-api
     env: node
     buildCommand: |
-      if [ ! -d "backend" ]; then
-        echo "Backend directory not found in: $PWD"
-        ls -la
+      pwd
+      ls -la
+      if [ -f "backend/package.json" ]; then
+        cd backend
+        npm ci --production=false
+        npm run migrate
+      else
+        echo "Error: backend/package.json not found"
         exit 1
       fi
-      cd backend
-      npm ci --production=false
-      npm run migrate
-    startCommand: cd backend && npm start
+    startCommand: |
+      if [ -f "backend/package.json" ]; then
+        cd backend
+        npm start
+      else
+        echo "Error: backend/package.json not found"
+        exit 1
+      fi
     envVars:
       - key: NODE_ENV
         value: production
