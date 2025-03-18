@@ -27,20 +27,24 @@ services:
       npm run build
       npm run migrate
       
-      echo "\nFinal directory structure:"
+      echo "\nVerifying final structure..."
       cd ..
       pwd
+      echo "Root directory contents:"
       ls -la
-      echo "\nFrontend build contents:"
+      echo "Frontend build contents:"
       ls -la frontend/build
     startCommand: |
       echo "Starting server from directory:"
       pwd
       ls -la
-      echo "\nParent directory contents:"
-      ls -la ..
+      echo "\nRoot directory contents:"
+      cd ..
+      pwd
+      ls -la
       echo "\nFrontend build contents:"
-      ls -la ../frontend/build
+      ls -la frontend/build
+      cd backend
       node src/app.js
     rootDirectory: backend
     envVars:

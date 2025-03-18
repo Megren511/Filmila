@@ -42,7 +42,7 @@ app.use('/api/videos', authMiddleware, videoRoutes);
 
 // Get the absolute path to the frontend build directory
 const frontendPath = process.env.NODE_ENV === 'production'
-  ? path.join(__dirname, '../../frontend/build')
+  ? path.join(process.cwd(), '../frontend/build')
   : path.join(__dirname, '../../frontend/build');
 
 console.log('Environment:', process.env.NODE_ENV);
@@ -57,23 +57,23 @@ try {
   console.log('\nListing current directory contents:');
   console.log(fs.readdirSync(process.cwd()));
   
-  const parentDir = path.dirname(__dirname);
+  const parentDir = path.dirname(process.cwd());
   console.log('\nListing parent directory contents:', parentDir);
   console.log(fs.readdirSync(parentDir));
   
-  const frontendDir = path.dirname(frontendPath);
-  if (fs.existsSync(frontendDir)) {
-    console.log('\nListing frontend directory contents:', frontendDir);
-    console.log(fs.readdirSync(frontendDir));
-    
-    if (fs.existsSync(frontendPath)) {
-      console.log('\nListing frontend build contents:', frontendPath);
-      console.log(fs.readdirSync(frontendPath));
-    } else {
-      console.error('\nFrontend build directory does not exist at:', frontendPath);
-    }
+  if (fs.existsSync(frontendPath)) {
+    console.log('\nListing frontend build contents:', frontendPath);
+    console.log(fs.readdirSync(frontendPath));
   } else {
-    console.error('\nFrontend directory does not exist at:', frontendDir);
+    console.error('\nFrontend build directory does not exist at:', frontendPath);
+    // Try to list parent directory
+    const frontendDir = path.dirname(frontendPath);
+    if (fs.existsSync(frontendDir)) {
+      console.log('\nListing frontend directory contents:', frontendDir);
+      console.log(fs.readdirSync(frontendDir));
+    } else {
+      console.error('\nFrontend directory does not exist at:', frontendDir);
+    }
   }
 } catch (err) {
   console.error('Error listing directory:', err);
@@ -99,19 +99,12 @@ app.get('*', function(req, res) {
         cwd: process.cwd(),
         dirname: __dirname,
         dirContents: fs.existsSync(frontendPath) ? fs.readdirSync(frontendPath) : 'directory not found',
-        parentContents: fs.existsSync(path.dirname(frontendPath)) ? fs.readdirSync(path.dirname(frontendPath)) : 'parent directory not found'
+        parentContents: fs.existsSync(path.dirname(process.cwd())) ? fs.readdirSync(path.dirname(process.cwd())) : 'parent directory not found'
       }
     });
   }
   
-  try {
-    const fileContents = fs.readFileSync(indexPath, 'utf8');
-    console.log('index.html contents:', fileContents.substring(0, 200) + '...');
-    res.send(fileContents);
-  } catch (err) {
-    console.error('Error reading index.html:', err);
-    res.status(500).json({ message: 'Error reading index.html', error: err });
-  }
+  res.sendFile(indexPath);
 });
 
 // Error handling
