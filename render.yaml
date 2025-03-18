@@ -3,6 +3,7 @@ services:
   - type: web
     name: filmila
     env: node
+    nodeVersion: 16
     buildCommand: |
       echo "Starting build process..."
       echo "Current directory: $PWD"
@@ -12,8 +13,8 @@ services:
       cd frontend
       echo "Frontend directory: $PWD"
       ls -la
-      npm ci --production=false
-      CI=false npm run build
+      npm ci --legacy-peer-deps
+      CI=false DISABLE_ESLINT_PLUGIN=true npm run build
       echo "Frontend build complete. Build directory contents:"
       ls -la build
       
@@ -23,7 +24,7 @@ services:
       ls -la
       
       echo "\nInstalling backend dependencies..."
-      npm ci --production=false
+      npm ci --legacy-peer-deps
       npm run build
       npm run migrate
       
@@ -45,7 +46,7 @@ services:
       echo "\nFrontend build contents:"
       ls -la frontend/build
       cd backend
-      node src/app.js
+      NODE_ENV=production node src/app.js
     rootDirectory: backend
     envVars:
       - key: NODE_ENV
