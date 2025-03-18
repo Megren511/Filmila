@@ -7,7 +7,8 @@
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "migrate": "node src/db/migrate.js",
-    "test": "jest"
+    "test": "jest",
+    "build": "echo 'No build step required'"
   },
   "dependencies": {
     "aws-sdk": "^2.1048.0",
