@@ -9,28 +9,10 @@ services:
       echo "Current directory: $PWD"
       ls -la
       
-      echo "\nBuilding frontend..."
-      cd frontend
-      echo "Frontend directory: $PWD"
-      ls -la
-      npm ci --legacy-peer-deps
-      CI=false DISABLE_ESLINT_PLUGIN=true npm run build
-      echo "Frontend build complete. Build directory contents:"
-      ls -la build
-      
-      echo "\nPreparing backend..."
-      cd ../backend
-      echo "Backend directory: $PWD"
-      ls -la
-      
-      echo "\nInstalling backend dependencies..."
       npm ci --legacy-peer-deps
       npm run build
-      npm run migrate
       
       echo "\nVerifying final structure..."
-      cd ..
-      pwd
       echo "Root directory contents:"
       ls -la
       echo "Frontend build contents:"
@@ -40,14 +22,11 @@ services:
       pwd
       ls -la
       echo "\nRoot directory contents:"
-      cd ..
-      pwd
       ls -la
       echo "\nFrontend build contents:"
       ls -la frontend/build
-      cd backend
-      NODE_ENV=production node src/app.js
-    rootDirectory: backend
+      cd backend && NODE_ENV=production node src/app.js
+    rootDirectory: .
     envVars:
       - key: NODE_ENV
         value: production
