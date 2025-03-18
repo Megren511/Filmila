@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config');
-const { User, Session } = require('../models');
+const { User } = require('../models');
 
 const authenticateToken = async (req, res, next) => {
   try {
@@ -14,31 +14,18 @@ const authenticateToken = async (req, res, next) => {
 
     // Verify token
     const decoded = jwt.verify(token, config.jwt.secret);
-    if (!decoded.id || !decoded.session_id) {
+    if (!decoded.id) {
       return res.status(401).json({ message: 'Invalid token' });
     }
 
-    // Get user and session
-    const [user, session] = await Promise.all([
-      User.findById(decoded.id),
-      Session.findById(decoded.session_id)
-    ]);
-
+    // Get user
+    const user = await User.findById(decoded.id);
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
 
-    if (!session || !session.is_active) {
-      return res.status(401).json({ message: 'Session expired' });
-    }
-
-    // Update session activity
-    await Session.updateActivity(session.id);
-
-    // Attach user and session to request
+    // Attach user to request
     req.user = user;
-    req.session = session;
-
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
@@ -54,7 +41,7 @@ const authenticateToken = async (req, res, next) => {
 const authorizeRole = (roles) => {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
+      return res.status(403).json({ message: 'Insufficient permissions' });
     }
     next();
   };

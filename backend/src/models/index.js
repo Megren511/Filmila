@@ -71,9 +71,4 @@ class BaseModel {
   }
 }
 
-module.exports = {
-  User: require('./user.model'),
-  Session: require('./session.model'),
-  RefreshToken: require('./refreshToken.model'),
-  EmailLog: require('./emailLog.model')
-};
+module.exports = BaseModel;

@@ -22,7 +22,7 @@ router.get('/profile', auth, async (req, res) => {
 // Update user profile
 router.put('/profile', auth, async (req, res) => {
   try {
-    const allowedUpdates = ['first_name', 'last_name', 'email'];
+    const allowedUpdates = ['full_name', 'email'];
     const updates = {};
     
     Object.keys(req.body).forEach(key => {
