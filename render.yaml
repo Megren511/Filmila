@@ -3,11 +3,16 @@ services:
   - type: web
     name: filmila-api
     env: node
-    rootDir: backend
     buildCommand: |
+      if [ ! -d "backend" ]; then
+        echo "Backend directory not found in: $PWD"
+        ls -la
+        exit 1
+      fi
+      cd backend
       npm ci --production=false
       npm run migrate
-    startCommand: npm start
+    startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV
         value: production
