@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "Filmila platform",
   "scripts": {
-    "start": "cd backend && npm start",
-    "build": "cd backend && npm install && npm run migrate",
-    "install": "cd backend && npm install"
+    "start": "cd backend && node src/app.js",
+    "build": "cd backend && npm ci",
+    "postbuild": "cd backend && node src/db/migrate.js",
+    "install": "cd backend && npm ci"
   },
   "engines": {
     "node": ">=16.0.0"
