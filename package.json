@@ -1,0 +1,13 @@
+{
+  "name": "filmila",
+  "version": "1.0.0",
+  "description": "Filmila platform",
+  "scripts": {
+    "start": "cd backend && npm start",
+    "build": "cd backend && npm install && npm run migrate",
+    "install": "cd backend && npm install"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

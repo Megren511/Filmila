@@ -1,0 +1,51 @@
+services:
+  # Backend API Service
+  - type: web
+    name: filmila-api
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: DATABASE_URL
+        value: postgresql://filmila_db_user:0KPw6xRyDXmM0nG7Zy90R7T7hOm8dxbh@dpg-cv91v09c1ekc73e2v57g-a.singapore-postgres.render.com/filmila_db
+      - key: DATABASE_SSL
+        value: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRY
+        value: 24h
+      - key: FRONTEND_URL
+        value: https://filmila-web.onrender.com
+      - key: API_PREFIX
+        value: /api
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: eu-north-1
+      - key: AWS_S3_BUCKET
+        value: filmila-videos
+      - key: CLOUDFRONT_DOMAIN
+        value: d1k0enfou8eft6.cloudfront.net
+
+  # Frontend Static Site
+  - type: web
+    name: filmila-web
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://filmila-api.onrender.com/api
+      - key: REACT_APP_CLOUDFRONT_DOMAIN
+        value: d1k0enfou8eft6.cloudfront.net
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
