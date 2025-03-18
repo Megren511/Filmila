@@ -1,0 +1,129 @@
+.user-type-container {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: url('https://source.unsplash.com/1920x1080/?filmmaking,camera');
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  color: white;
+  padding: 2rem 0;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1;
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  width: 100%;
+  max-width: 1200px;
+  padding: 0 20px;
+}
+
+.title {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  margin-bottom: 3rem;
+  opacity: 0.9;
+}
+
+.cards-container {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.type-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.type-card:hover {
+  transform: translateY(-10px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.card-content h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #e50914;
+}
+
+.card-content p {
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.card-content ul {
+  text-align: left;
+  margin-bottom: 2rem;
+  list-style: none;
+}
+
+.card-content ul li {
+  margin-bottom: 0.8rem;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.card-content ul li:before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: #e50914;
+}
+
+.select-btn {
+  background: #e50914;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.select-btn:hover {
+  background: #f40612;
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 2.5rem;
+  }
+  
+  .type-card {
+    margin: 1rem;
+  }
+  
+  .card-content h2 {
+    font-size: 1.8rem;
+  }
+}
