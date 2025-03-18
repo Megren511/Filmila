@@ -3,11 +3,11 @@ services:
   - type: web
     name: filmila
     env: node
-    rootDirectory: .
+    rootDirectory: backend
     buildCommand: |
-      cd frontend && npm ci --production=false && npm run build && cd ..
-      cd backend && npm ci --production=false && npm run build && npm run migrate
-    startCommand: cd backend && npm start
+      cd ../frontend && npm ci --production=false && npm run build
+      cd ../backend && npm ci --production=false && npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
