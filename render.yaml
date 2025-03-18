@@ -5,10 +5,15 @@ services:
     env: node
     rootDirectory: backend
     buildCommand: |
+      echo "Current directory: $PWD"
+      ls -la
       cd ../frontend && npm ci --production=false && npm run build
+      cd ../backend
+      ls -la
       mkdir -p frontend/build
       cp -r ../frontend/build/* frontend/build/
-      cd ../backend && npm ci --production=false && npm run build && npm run migrate
+      ls -la frontend/build
+      npm ci --production=false && npm run build && npm run migrate
     startCommand: npm start
     envVars:
       - key: NODE_ENV

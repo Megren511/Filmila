@@ -42,7 +42,7 @@ app.use('/api/videos', authMiddleware, videoRoutes);
 
 // Get the absolute path to the frontend build directory
 const frontendBuildPath = process.env.NODE_ENV === 'production'
-  ? '/opt/render/project/src/backend/frontend/build'
+  ? path.join(process.cwd(), 'frontend/build')
   : path.join(__dirname, '../../frontend/build');
 
 console.log('Current working directory:', process.cwd());
@@ -54,11 +54,18 @@ console.log('Absolute path:', path.resolve(frontendBuildPath));
 if (process.env.NODE_ENV === 'production') {
   const fs = require('fs');
   try {
-    console.log('Listing /opt/render/project/src contents:');
-    console.log(fs.readdirSync('/opt/render/project/src'));
+    console.log('Listing current directory contents:');
+    console.log(fs.readdirSync(process.cwd()));
     
-    console.log('Listing backend directory contents:');
-    console.log(fs.readdirSync('/opt/render/project/src/backend'));
+    if (fs.existsSync('frontend')) {
+      console.log('Listing frontend directory contents:');
+      console.log(fs.readdirSync('frontend'));
+      
+      if (fs.existsSync('frontend/build')) {
+        console.log('Listing frontend/build directory contents:');
+        console.log(fs.readdirSync('frontend/build'));
+      }
+    }
   } catch (err) {
     console.error('Error listing directory:', err);
   }
