@@ -3,14 +3,13 @@ services:
   - type: web
     name: filmila
     env: node
-    rootDirectory: backend
     buildCommand: |
       echo "Starting build process..."
       echo "Current directory: $PWD"
       ls -la
       
       echo "\nBuilding frontend..."
-      cd ../frontend
+      cd frontend
       echo "Frontend directory: $PWD"
       ls -la
       npm ci --production=false
@@ -23,28 +22,27 @@ services:
       echo "Backend directory: $PWD"
       ls -la
       
-      echo "\nCopying frontend build..."
-      rm -rf frontend/build
-      mkdir -p frontend/build
-      cp -rv ../frontend/build/* frontend/build/
-      echo "Frontend build copied. Contents:"
-      ls -la frontend/build
-      
       echo "\nInstalling backend dependencies..."
       npm ci --production=false
       npm run build
       npm run migrate
       
+      echo "\nCopying frontend build..."
+      cd ..
+      cp -rv frontend/build backend/public
+      echo "Frontend build copied. Contents:"
+      ls -la backend/public
+      
       echo "\nFinal directory structure:"
-      pwd
-      ls -R
+      ls -R backend
     startCommand: |
       echo "Starting server from directory:"
       pwd
       ls -la
-      echo "\nFrontend build location:"
-      ls -la frontend/build
+      echo "\nPublic directory contents:"
+      ls -la public
       npm start
+    rootDirectory: backend
     envVars:
       - key: NODE_ENV
         value: production

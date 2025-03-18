@@ -41,13 +41,13 @@ app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/videos', authMiddleware, videoRoutes);
 
 // Get the absolute path to the frontend build directory
-const frontendBuildPath = path.join(process.cwd(), 'frontend/build');
+const publicPath = path.join(process.cwd(), 'public');
 
 console.log('Environment:', process.env.NODE_ENV);
 console.log('Current working directory:', process.cwd());
-console.log('Frontend build path:', frontendBuildPath);
+console.log('Public path:', publicPath);
 console.log('__dirname:', __dirname);
-console.log('Absolute path:', path.resolve(frontendBuildPath));
+console.log('Absolute path:', path.resolve(publicPath));
 
 // List directory contents
 const fs = require('fs');
@@ -55,29 +55,22 @@ try {
   console.log('\nListing current directory contents:');
   console.log(fs.readdirSync(process.cwd()));
   
-  if (fs.existsSync('frontend')) {
-    console.log('\nListing frontend directory contents:');
-    console.log(fs.readdirSync('frontend'));
-    
-    if (fs.existsSync('frontend/build')) {
-      console.log('\nListing frontend/build directory contents:');
-      console.log(fs.readdirSync('frontend/build'));
-    } else {
-      console.error('\nfrontend/build directory does not exist');
-    }
+  if (fs.existsSync('public')) {
+    console.log('\nListing public directory contents:');
+    console.log(fs.readdirSync('public'));
   } else {
-    console.error('\nfrontend directory does not exist');
+    console.error('\npublic directory does not exist');
   }
 } catch (err) {
   console.error('Error listing directory:', err);
 }
 
 // Serve static files from the React frontend app
-app.use(express.static(frontendBuildPath));
+app.use(express.static(publicPath));
 
 // Handle React routing, return all requests to React app
 app.get('*', function(req, res) {
-  const indexPath = path.join(frontendBuildPath, 'index.html');
+  const indexPath = path.join(publicPath, 'index.html');
   console.log('\nRequest URL:', req.url);
   console.log('Serving index.html from:', indexPath);
   console.log('File exists:', fs.existsSync(indexPath));
@@ -87,10 +80,10 @@ app.get('*', function(req, res) {
     return res.status(500).json({ 
       message: `index.html not found at: ${indexPath}`,
       error: { 
-        frontendBuildPath, 
+        publicPath, 
         indexPath, 
         cwd: process.cwd(),
-        dirContents: fs.existsSync(frontendBuildPath) ? fs.readdirSync(frontendBuildPath) : 'directory not found'
+        dirContents: fs.existsSync(publicPath) ? fs.readdirSync(publicPath) : 'directory not found'
       }
     });
   }
