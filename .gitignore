@@ -13,9 +13,11 @@ node_modules/
 # Testing
 /coverage
 
-# Production
-/build
-/dist
+# Production (except frontend build)
+backend/build/
+backend/dist/
+# We need to keep the frontend build for Render deployment
+!frontend/build/
 
 # Debug
 npm-debug.log*
@@ -53,10 +55,6 @@ logs
 
 # AWS
 .aws/
-
-# Next.js
-.next/
-out/
 
 # Misc
 *.pem
