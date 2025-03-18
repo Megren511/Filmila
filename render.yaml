@@ -26,6 +26,13 @@ services:
       npm ci --legacy-peer-deps
       npm run build
       npm run migrate
+      
+      # Copy frontend build to backend/public
+      echo "\nCopying frontend build to backend/public..."
+      mkdir -p public
+      cp -r ../frontend/build/* public/
+      echo "Backend public contents:"
+      ls -la public
       cd ..
       
       echo "\nVerifying final structure..."
@@ -36,11 +43,6 @@ services:
       ls -la frontend/build
       echo "Backend directory contents:"
       ls -la backend
-      
-      # Copy frontend build to backend public
-      echo "\nCopying frontend build to backend/public..."
-      mkdir -p backend/public
-      cp -r frontend/build/* backend/public/
       echo "Backend public contents:"
       ls -la backend/public
     startCommand: |
@@ -49,8 +51,8 @@ services:
       ls -la
       echo "\nPublic directory contents:"
       ls -la public
-      cd backend && NODE_ENV=production node src/app.js
-    rootDirectory: .
+      NODE_ENV=production node src/app.js
+    rootDirectory: backend
     envVars:
       - key: NODE_ENV
         value: production

@@ -42,7 +42,7 @@ app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/videos', authMiddleware, videoRoutes);
 
 // Get the absolute path to the frontend build directory
-const publicPath = path.join(process.cwd(), 'public');
+const publicPath = path.join(__dirname, '../public');
 
 console.log('\n=== Environment Information ===');
 console.log('NODE_ENV:', process.env.NODE_ENV);
