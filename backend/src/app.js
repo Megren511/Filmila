@@ -9,6 +9,7 @@ const userRoutes = require('./routes/user.routes');
 const videoRoutes = require('./routes/video.routes');
 const { errorHandler } = require('./middleware/error');
 const { authMiddleware } = require('./middleware/auth');
+const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -41,69 +42,93 @@ app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/videos', authMiddleware, videoRoutes);
 
 // Get the absolute path to the frontend build directory
-const frontendPath = process.env.NODE_ENV === 'production'
-  ? path.join(process.cwd(), '../frontend/build')
-  : path.join(__dirname, '../../frontend/build');
+const publicPath = path.join(process.cwd(), 'public');
 
-console.log('Environment:', process.env.NODE_ENV);
+console.log('\n=== Environment Information ===');
+console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('Current working directory:', process.cwd());
-console.log('Frontend path:', frontendPath);
 console.log('__dirname:', __dirname);
-console.log('Absolute path:', path.resolve(frontendPath));
+console.log('Public path:', publicPath);
+console.log('Absolute public path:', path.resolve(publicPath));
 
 // List directory contents
-const fs = require('fs');
 try {
-  console.log('\nListing current directory contents:');
-  console.log(fs.readdirSync(process.cwd()));
+  console.log('\n=== Directory Structure ===');
+  console.log('Current directory contents:', fs.readdirSync(process.cwd()));
   
-  const parentDir = path.dirname(process.cwd());
-  console.log('\nListing parent directory contents:', parentDir);
-  console.log(fs.readdirSync(parentDir));
-  
-  if (fs.existsSync(frontendPath)) {
-    console.log('\nListing frontend build contents:', frontendPath);
-    console.log(fs.readdirSync(frontendPath));
+  if (fs.existsSync(publicPath)) {
+    console.log('\nPublic directory contents:', fs.readdirSync(publicPath));
   } else {
-    console.error('\nFrontend build directory does not exist at:', frontendPath);
-    // Try to list parent directory
-    const frontendDir = path.dirname(frontendPath);
-    if (fs.existsSync(frontendDir)) {
-      console.log('\nListing frontend directory contents:', frontendDir);
-      console.log(fs.readdirSync(frontendDir));
-    } else {
-      console.error('\nFrontend directory does not exist at:', frontendDir);
-    }
+    console.error('\nPublic directory not found at:', publicPath);
+    
+    // Try to find the public directory
+    const possiblePaths = [
+      path.join(process.cwd(), 'public'),
+      path.join(__dirname, '../public'),
+      path.join(__dirname, '../../public')
+    ];
+    
+    console.log('\n=== Searching for public directory ===');
+    possiblePaths.forEach(p => {
+      console.log(`\nChecking path: ${p}`);
+      console.log('Exists:', fs.existsSync(p));
+      if (fs.existsSync(p)) {
+        console.log('Contents:', fs.readdirSync(p));
+      }
+    });
   }
 } catch (err) {
-  console.error('Error listing directory:', err);
+  console.error('\nError listing directories:', err);
 }
 
 // Serve static files from the React frontend app
-app.use(express.static(frontendPath));
+app.use(express.static(publicPath));
 
 // Handle React routing, return all requests to React app
 app.get('*', function(req, res) {
-  const indexPath = path.join(frontendPath, 'index.html');
-  console.log('\nRequest URL:', req.url);
-  console.log('Serving index.html from:', indexPath);
-  console.log('File exists:', fs.existsSync(indexPath));
+  console.log('\n=== Handling Request ===');
+  console.log('Request URL:', req.url);
+  
+  const indexPath = path.join(publicPath, 'index.html');
+  console.log('Looking for index.html at:', indexPath);
   
   if (!fs.existsSync(indexPath)) {
-    console.error('index.html not found at:', indexPath);
+    console.error('index.html not found!');
+    
+    // Try to find index.html
+    const possiblePaths = [
+      path.join(process.cwd(), 'public/index.html'),
+      path.join(__dirname, '../public/index.html'),
+      path.join(__dirname, '../../public/index.html')
+    ];
+    
+    console.log('\n=== Searching for index.html ===');
+    possiblePaths.forEach(p => {
+      console.log(`\nChecking path: ${p}`);
+      console.log('Exists:', fs.existsSync(p));
+      if (fs.existsSync(p)) {
+        console.log('File size:', fs.statSync(p).size);
+      }
+    });
+    
     return res.status(500).json({ 
       message: `index.html not found at: ${indexPath}`,
       error: { 
-        frontendPath, 
+        publicPath, 
         indexPath, 
         cwd: process.cwd(),
         dirname: __dirname,
-        dirContents: fs.existsSync(frontendPath) ? fs.readdirSync(frontendPath) : 'directory not found',
-        parentContents: fs.existsSync(path.dirname(process.cwd())) ? fs.readdirSync(path.dirname(process.cwd())) : 'parent directory not found'
+        env: process.env.NODE_ENV,
+        searchedPaths: possiblePaths.map(p => ({
+          path: p,
+          exists: fs.existsSync(p),
+          size: fs.existsSync(p) ? fs.statSync(p).size : null
+        }))
       }
     });
   }
   
+  console.log('index.html found! Size:', fs.statSync(indexPath).size);
   res.sendFile(indexPath);
 });
 
@@ -112,7 +137,9 @@ app.use(errorHandler);
 
 // Start server
 app.listen(port, () => {
+  console.log(`\n=== Server Started ===`);
   console.log(`Server is running on port ${port}`);
+  console.log('Frontend will be served from:', publicPath);
 });
 
 module.exports = app;

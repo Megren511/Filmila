@@ -9,22 +9,46 @@ services:
       echo "Current directory: $PWD"
       ls -la
       
+      # Install root dependencies
+      echo "\nInstalling root dependencies..."
+      npm ci --legacy-peer-deps
+      
+      # Build frontend
+      echo "\nBuilding frontend..."
+      cd frontend
+      npm ci --legacy-peer-deps
+      CI=false DISABLE_ESLINT_PLUGIN=true npm run build
+      cd ..
+      
+      # Build backend
+      echo "\nBuilding backend..."
+      cd backend
       npm ci --legacy-peer-deps
       npm run build
+      npm run migrate
+      cd ..
       
       echo "\nVerifying final structure..."
+      pwd
       echo "Root directory contents:"
       ls -la
       echo "Frontend build contents:"
       ls -la frontend/build
+      echo "Backend directory contents:"
+      ls -la backend
+      
+      # Copy frontend build to backend public
+      echo "\nCopying frontend build to backend/public..."
+      mkdir -p backend/public
+      cp -r frontend/build/* backend/public/
+      echo "Backend public contents:"
+      ls -la backend/public
     startCommand: |
       echo "Starting server from directory:"
       pwd
       ls -la
-      echo "\nRoot directory contents:"
-      ls -la
-      echo "\nFrontend build contents:"
-      ls -la frontend/build
+      echo "\nPublic directory contents:"
+      ls -la public
       cd backend && NODE_ENV=production node src/app.js
     rootDirectory: .
     envVars:
