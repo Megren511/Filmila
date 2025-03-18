@@ -3,8 +3,9 @@ services:
   - type: web
     name: filmila-api
     env: node
-    buildCommand: cd backend && npm ci && npm run migrate
-    startCommand: cd backend && node src/app.js
+    rootDir: backend
+    buildCommand: npm ci && npm run migrate
+    startCommand: node src/app.js
     envVars:
       - key: NODE_ENV
         value: production
