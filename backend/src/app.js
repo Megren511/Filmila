@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -41,21 +40,27 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/videos', authMiddleware, videoRoutes);
 
-// Get the absolute path to the frontend build directory
-const frontendPath = process.env.FRONTEND_BUILD_PATH || path.join(process.cwd(), '../frontend/build');
-
+// Log environment information
 console.log('\n=== Environment Information ===');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('Current working directory:', process.cwd());
 console.log('__dirname:', __dirname);
+
+// Configure frontend path
+const frontendPath = process.env.FRONTEND_BUILD_PATH || path.join(__dirname, '../../frontend/build');
 console.log('Frontend path:', frontendPath);
 console.log('Frontend path exists:', fs.existsSync(frontendPath));
 
-// Serve static files from the React frontend app
+if (fs.existsSync(frontendPath)) {
+  console.log('\nFrontend build contents:', fs.readdirSync(frontendPath));
+}
+
+// Serve static files from the React app
 app.use(express.static(frontendPath));
 
 // Handle React routing, return all requests to React app
-app.get('*', function(req, res) {
+app.get('*', (req, res) => {
+  console.log('Serving index.html for path:', req.path);
   const indexPath = path.join(frontendPath, 'index.html');
   
   if (!fs.existsSync(indexPath)) {
@@ -74,6 +79,12 @@ app.get('*', function(req, res) {
   res.sendFile(indexPath);
 });
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something went wrong!' });
+});
+
 // Error handling
 app.use(errorHandler);
 
@@ -81,11 +92,7 @@ app.use(errorHandler);
 app.listen(port, () => {
   console.log(`\n=== Server Started ===`);
   console.log(`Server is running on port ${port}`);
-  console.log('Frontend will be served from:', frontendPath);
-  
-  if (fs.existsSync(frontendPath)) {
-    console.log('\nFrontend build contents:', fs.readdirSync(frontendPath));
-  }
+  console.log(`Frontend will be served from: ${frontendPath}\n`);
 });
 
 module.exports = app;

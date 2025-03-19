@@ -1,30 +1,30 @@
 services:
   # Backend API Service
   - type: web
-    name: filmila-webapp
+    name: filmila
     env: node
-    nodeVersion: 16
+    nodeVersion: 18.x
     buildCommand: |
-      echo "=== Installing Dependencies ==="
-      npm ci --legacy-peer-deps
+      # Install root dependencies
+      npm install
       
-      echo "=== Building Frontend ==="
+      # Build frontend
       cd frontend
-      npm ci --legacy-peer-deps
-      set "DISABLE_ESLINT_PLUGIN=true" && set "CI=false" && npm run build
+      npm install
+      npm run build
       cd ..
       
-      echo "=== Verifying Build ==="
-      if not exist "frontend\build\index.html" (
+      # Build backend
+      cd backend
+      npm install
+      
+      # Verify frontend build
+      if [ ! -f "../frontend/build/index.html" ]; then
         echo "Error: frontend/build/index.html not found!"
         exit 1
-      )
+      fi
       echo "Frontend build verified successfully"
-    startCommand: |
-      echo "=== Starting Server ==="
-      cd backend
-      npm ci --legacy-peer-deps
-      npm start
+    startCommand: cd backend && npm start
     rootDirectory: .
     envVars:
       - key: NODE_ENV
