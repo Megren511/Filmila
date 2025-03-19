@@ -1,24 +1,16 @@
 {
   "name": "filmila",
   "version": "1.0.0",
-  "description": "Filmila platform",
+  "description": "Filmila video streaming platform",
   "private": true,
-  "engines": {
-    "node": "16.x"
-  },
   "workspaces": [
     "frontend",
     "backend"
   ],
   "scripts": {
     "start": "cd backend && npm start",
-    "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "cd frontend && npm ci --legacy-peer-deps && CI=false DISABLE_ESLINT_PLUGIN=true npm run build",
-    "build:backend": "cd backend && npm ci --legacy-peer-deps && npm run build && npm run migrate",
-    "dev": "concurrently \"cd frontend && npm start\" \"cd backend && npm run dev\"",
-    "test": "npm run test:frontend && npm run test:backend",
-    "test:frontend": "cd frontend && npm test",
-    "test:backend": "cd backend && npm test"
+    "build": "cd frontend && npm run build",
+    "dev": "cd backend && npm run dev"
   },
   "devDependencies": {
     "concurrently": "^8.0.0"

@@ -1,78 +1,44 @@
 services:
   # Backend API Service
   - type: web
-    name: filmila
+    name: filmila-webapp
     env: node
     nodeVersion: 16
     buildCommand: |
-      echo "=== Starting build process ==="
-      pwd
-      ls -la
+      echo "=== Installing Dependencies ==="
+      npm ci --legacy-peer-deps
       
-      # Build frontend
-      echo "\n=== Building frontend ==="
+      echo "=== Building Frontend ==="
       cd frontend
       npm ci --legacy-peer-deps
-      CI=false DISABLE_ESLINT_PLUGIN=true npm run build
+      set "DISABLE_ESLINT_PLUGIN=true" && set "CI=false" && npm run build
       cd ..
       
-      # Save frontend build path
-      FRONTEND_BUILD_PATH=$PWD/frontend/build
-      echo "FRONTEND_BUILD_PATH=$FRONTEND_BUILD_PATH" > .env
-      echo "\nFrontend build path: $FRONTEND_BUILD_PATH"
-      ls -la $FRONTEND_BUILD_PATH
-      
-      # Build backend
-      echo "\n=== Building backend ==="
+      echo "=== Verifying Build ==="
+      if not exist "frontend\build\index.html" (
+        echo "Error: frontend/build/index.html not found!"
+        exit 1
+      )
+      echo "Frontend build verified successfully"
+    startCommand: |
+      echo "=== Starting Server ==="
       cd backend
       npm ci --legacy-peer-deps
-      npm run build
-      npm run migrate
-      cd ..
-      
-      # Verify frontend build
-      echo "\n=== Verifying frontend build ==="
-      echo "Build directory exists:"
-      test -d $FRONTEND_BUILD_PATH && echo "Yes" || echo "No"
-      echo "index.html exists:"
-      test -f $FRONTEND_BUILD_PATH/index.html && echo "Yes" || echo "No"
-      echo "Contents:"
-      ls -la $FRONTEND_BUILD_PATH
-      echo "First few lines of index.html:"
-      head -n 5 $FRONTEND_BUILD_PATH/index.html
-    startCommand: |
-      echo "=== Starting server ==="
-      pwd
-      ls -la
-      
-      # Export frontend build path
-      export FRONTEND_BUILD_PATH=$PWD/frontend/build
-      echo "FRONTEND_BUILD_PATH=$FRONTEND_BUILD_PATH"
-      
-      # Verify frontend build
-      echo "\n=== Verifying frontend build ==="
-      echo "Build directory exists:"
-      test -d $FRONTEND_BUILD_PATH && echo "Yes" || echo "No"
-      echo "index.html exists:"
-      test -f $FRONTEND_BUILD_PATH/index.html && echo "Yes" || echo "No"
-      echo "Contents:"
-      ls -la $FRONTEND_BUILD_PATH
-      
-      # Start server
-      cd backend
-      NODE_ENV=production node src/app.js
+      npm start
     rootDirectory: .
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_SSL
-        value: true
+      - key: FRONTEND_BUILD_PATH
+        value: /opt/render/project/src/frontend/build
       - key: DATABASE_URL
         fromDatabase:
           name: filmila-db
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
+      - key: DATABASE_SSL
+        value: true
       - key: JWT_EXPIRY
         value: 24h
       - key: FRONTEND_URL
