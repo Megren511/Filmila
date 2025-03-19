@@ -39,17 +39,17 @@ services:
   - type: web
     name: filmila
     env: static
-    rootDirectory: .
-    buildCommand: |
-      cd frontend
-      npm ci --legacy-peer-deps
-      DISABLE_ESLINT_PLUGIN=true CI=false npm run build
-    staticPublishPath: frontend/build
+    buildCommand: cd frontend && npm ci --legacy-peer-deps && npm run build
+    staticPublishPath: ./frontend/build
     envVars:
       - key: REACT_APP_API_URL
         value: https://filmila.onrender.com/api
       - key: REACT_APP_CLOUDFRONT_DOMAIN
         value: d1k0enfou8eft6.cloudfront.net
+      - key: DISABLE_ESLINT_PLUGIN
+        value: "true"
+      - key: CI
+        value: "false"
     routes:
       - type: rewrite
         source: /*
