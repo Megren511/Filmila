@@ -5,52 +5,65 @@ services:
     env: node
     nodeVersion: 16
     buildCommand: |
-      echo "Starting build process..."
+      echo "=== Starting build process ==="
       echo "Current directory: $PWD"
       ls -la
       
-      # Install root dependencies
-      echo "\nInstalling root dependencies..."
+      echo "\n=== Installing dependencies ==="
       npm ci --legacy-peer-deps
       
-      # Build frontend
-      echo "\nBuilding frontend..."
+      echo "\n=== Building frontend ==="
       cd frontend
+      echo "Frontend directory: $PWD"
+      ls -la
       npm ci --legacy-peer-deps
       CI=false DISABLE_ESLINT_PLUGIN=true npm run build
-      cd ..
+      echo "Frontend build contents:"
+      ls -la build
       
-      # Build backend
-      echo "\nBuilding backend..."
-      cd backend
+      echo "\n=== Building backend ==="
+      cd ../backend
+      echo "Backend directory: $PWD"
+      ls -la
       npm ci --legacy-peer-deps
       npm run build
       npm run migrate
       
-      # Copy frontend build to backend/public
-      echo "\nCopying frontend build to backend/public..."
+      echo "\n=== Setting up static files ==="
+      echo "Creating public directory..."
+      rm -rf public
       mkdir -p public
-      cp -r ../frontend/build/* public/
-      echo "Backend public contents:"
+      echo "Copying frontend build..."
+      cp -rv ../frontend/build/* public/
+      echo "Public directory contents:"
       ls -la public
-      cd ..
       
-      echo "\nVerifying final structure..."
+      echo "\n=== Final verification ==="
       pwd
-      echo "Root directory contents:"
-      ls -la
-      echo "Frontend build contents:"
-      ls -la frontend/build
-      echo "Backend directory contents:"
-      ls -la backend
-      echo "Backend public contents:"
-      ls -la backend/public
-    startCommand: |
-      echo "Starting server from directory:"
-      pwd
-      ls -la
-      echo "\nPublic directory contents:"
+      echo "Public directory exists:"
+      test -d public && echo "Yes" || echo "No"
+      echo "index.html exists:"
+      test -f public/index.html && echo "Yes" || echo "No"
+      echo "Public directory contents:"
       ls -la public
+      echo "Public directory size:"
+      du -sh public
+      echo "index.html contents (first few lines):"
+      head -n 5 public/index.html || echo "File not found or empty"
+    startCommand: |
+      echo "=== Starting server ==="
+      echo "Current directory: $PWD"
+      ls -la
+      
+      echo "\n=== Verifying public directory ==="
+      echo "Public directory exists:"
+      test -d public && echo "Yes" || echo "No"
+      echo "Public directory contents:"
+      ls -la public || echo "Directory not found"
+      echo "index.html exists:"
+      test -f public/index.html && echo "Yes" || echo "No"
+      
+      echo "\n=== Starting Node.js server ==="
       NODE_ENV=production node src/app.js
     rootDirectory: backend
     envVars:

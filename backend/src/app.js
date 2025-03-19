@@ -58,6 +58,20 @@ try {
   
   if (fs.existsSync(publicPath)) {
     console.log('\nPublic directory contents:', fs.readdirSync(publicPath));
+    
+    const indexPath = path.join(publicPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      const stats = fs.statSync(indexPath);
+      console.log('\nindex.html found!');
+      console.log('Size:', stats.size, 'bytes');
+      console.log('Created:', stats.birthtime);
+      console.log('Modified:', stats.mtime);
+      
+      // Read first few lines to verify content
+      const content = fs.readFileSync(indexPath, 'utf8').split('\n').slice(0, 5).join('\n');
+      console.log('\nFirst few lines of index.html:');
+      console.log(content);
+    }
   } else {
     console.error('\nPublic directory not found at:', publicPath);
     
@@ -74,6 +88,15 @@ try {
       console.log('Exists:', fs.existsSync(p));
       if (fs.existsSync(p)) {
         console.log('Contents:', fs.readdirSync(p));
+        
+        const indexPath = path.join(p, 'index.html');
+        if (fs.existsSync(indexPath)) {
+          const stats = fs.statSync(indexPath);
+          console.log('Found index.html!');
+          console.log('Size:', stats.size, 'bytes');
+          console.log('Created:', stats.birthtime);
+          console.log('Modified:', stats.mtime);
+        }
       }
     });
   }
@@ -88,9 +111,14 @@ app.use(express.static(publicPath));
 app.get('*', function(req, res) {
   console.log('\n=== Handling Request ===');
   console.log('Request URL:', req.url);
+  console.log('Current directory:', process.cwd());
+  console.log('__dirname:', __dirname);
+  console.log('Public path:', publicPath);
+  console.log('Exists:', fs.existsSync(publicPath));
   
   const indexPath = path.join(publicPath, 'index.html');
   console.log('Looking for index.html at:', indexPath);
+  console.log('Exists:', fs.existsSync(indexPath));
   
   if (!fs.existsSync(indexPath)) {
     console.error('index.html not found!');
@@ -107,7 +135,10 @@ app.get('*', function(req, res) {
       console.log(`\nChecking path: ${p}`);
       console.log('Exists:', fs.existsSync(p));
       if (fs.existsSync(p)) {
-        console.log('File size:', fs.statSync(p).size);
+        const stats = fs.statSync(p);
+        console.log('Size:', stats.size, 'bytes');
+        console.log('Created:', stats.birthtime);
+        console.log('Modified:', stats.mtime);
       }
     });
     
@@ -122,13 +153,19 @@ app.get('*', function(req, res) {
         searchedPaths: possiblePaths.map(p => ({
           path: p,
           exists: fs.existsSync(p),
-          size: fs.existsSync(p) ? fs.statSync(p).size : null
+          size: fs.existsSync(p) ? fs.statSync(p).size : null,
+          stats: fs.existsSync(p) ? fs.statSync(p) : null
         }))
       }
     });
   }
   
-  console.log('index.html found! Size:', fs.statSync(indexPath).size);
+  const stats = fs.statSync(indexPath);
+  console.log('\nindex.html found!');
+  console.log('Size:', stats.size, 'bytes');
+  console.log('Created:', stats.birthtime);
+  console.log('Modified:', stats.mtime);
+  
   res.sendFile(indexPath);
 });
 
@@ -140,6 +177,19 @@ app.listen(port, () => {
   console.log(`\n=== Server Started ===`);
   console.log(`Server is running on port ${port}`);
   console.log('Frontend will be served from:', publicPath);
+  
+  if (fs.existsSync(publicPath)) {
+    console.log('\nPublic directory contents:', fs.readdirSync(publicPath));
+    
+    const indexPath = path.join(publicPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      const stats = fs.statSync(indexPath);
+      console.log('\nindex.html found!');
+      console.log('Size:', stats.size, 'bytes');
+      console.log('Created:', stats.birthtime);
+      console.log('Modified:', stats.mtime);
+    }
+  }
 });
 
 module.exports = app;
