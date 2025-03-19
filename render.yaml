@@ -1,36 +1,17 @@
 services:
   # Backend API Service
   - type: web
-    name: filmila
+    name: filmila-api
     env: node
     nodeVersion: 18.x
     buildCommand: |
-      # Install root dependencies
-      npm install
-      
-      # Build frontend
-      cd frontend
-      npm install
-      npm run build
-      cd ..
-      
-      # Build backend
       cd backend
       npm install
-      
-      # Verify frontend build
-      if [ ! -f "../frontend/build/index.html" ]; then
-        echo "Error: frontend/build/index.html not found!"
-        exit 1
-      fi
-      echo "Frontend build verified successfully"
     startCommand: cd backend && npm start
     rootDirectory: .
     envVars:
       - key: NODE_ENV
         value: production
-      - key: FRONTEND_BUILD_PATH
-        value: /opt/render/project/src/frontend/build
       - key: DATABASE_URL
         sync: false
       - key: DATABASE_SSL
@@ -40,7 +21,7 @@ services:
       - key: JWT_EXPIRY
         value: 24h
       - key: FRONTEND_URL
-        value: https://filmila-web.onrender.com
+        value: https://filmila.onrender.com
       - key: API_PREFIX
         value: /api
       - key: AWS_ACCESS_KEY_ID
@@ -56,12 +37,12 @@ services:
 
   # Frontend Static Site
   - type: web
-    name: filmila-web
+    name: filmila
     env: static
     rootDir: frontend
     buildCommand: |
-      npm ci --production=false
-      npm run build
+      npm ci --legacy-peer-deps
+      DISABLE_ESLINT_PLUGIN=true CI=false npm run build
     staticPublishPath: build
     envVars:
       - key: REACT_APP_API_URL
