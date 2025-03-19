@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
+import config from '../config';
+import '../styles/Auth.css';
 
 function Register() {
   const navigate = useNavigate();
@@ -25,7 +27,7 @@ function Register() {
     }
 
     try {
-      const response = await axios.post('/api/auth/register', {
+      const response = await axios.post(`${config.apiUrl}/auth/register`, {
         email: formData.email,
         password: formData.password,
         name: formData.name,
@@ -35,7 +37,6 @@ function Register() {
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('userType', formData.userType);
-        // Redirect based on user type
         navigate(formData.userType === 'filmmaker' ? '/filmmaker-dashboard' : '/viewer-dashboard');
       }
     } catch (err) {
@@ -45,6 +46,7 @@ function Register() {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError(''); // Clear error when user types
   };
 
   return (
@@ -55,7 +57,7 @@ function Register() {
         
         {error && <div className="error-message">{error}</div>}
         
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <input
               type="text"
@@ -64,6 +66,7 @@ function Register() {
               onChange={handleChange}
               placeholder="Full Name"
               required
+              className="form-input"
             />
           </div>
           
@@ -75,6 +78,7 @@ function Register() {
               onChange={handleChange}
               placeholder="Email"
               required
+              className="form-input"
             />
           </div>
           
@@ -86,6 +90,7 @@ function Register() {
               onChange={handleChange}
               placeholder="Password"
               required
+              className="form-input"
             />
           </div>
           
@@ -97,6 +102,7 @@ function Register() {
               onChange={handleChange}
               placeholder="Confirm Password"
               required
+              className="form-input"
             />
           </div>
           
@@ -105,10 +111,12 @@ function Register() {
           </button>
         </form>
         
-        <p className="auth-link">
-          Already have an account?{' '}
-          <span onClick={() => navigate('/login')}>Sign In</span>
-        </p>
+        <div className="auth-links">
+          <p className="auth-link">
+            Already have an account?{' '}
+            <Link to="/login" className="link-text">Sign In</Link>
+          </p>
+        </div>
       </div>
     </div>
   );

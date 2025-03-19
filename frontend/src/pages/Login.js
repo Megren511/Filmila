@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import config from '../config';
 import '../styles/Auth.css';
 
 function Login() {
@@ -14,7 +15,7 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('/api/auth/login', {
+      const response = await axios.post(`${config.apiUrl}/auth/login`, {
         email: formData.email,
         password: formData.password
       });
@@ -22,7 +23,6 @@ function Login() {
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('userType', response.data.userType);
-        // Redirect based on user type
         navigate(response.data.userType === 'filmmaker' ? '/filmmaker-dashboard' : '/viewer-dashboard');
       }
     } catch (err) {
@@ -32,6 +32,7 @@ function Login() {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError(''); // Clear error when user types
   };
 
   return (
@@ -42,7 +43,7 @@ function Login() {
         
         {error && <div className="error-message">{error}</div>}
         
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <input
               type="email"
@@ -72,10 +73,15 @@ function Login() {
           </button>
         </form>
         
-        <p className="auth-link">
-          Don't have an account?{' '}
-          <span onClick={() => navigate('/')}>Get Started</span>
-        </p>
+        <div className="auth-links">
+          <p className="auth-link">
+            Don't have an account?{' '}
+            <Link to="/" className="link-text">Get Started</Link>
+          </p>
+          <Link to="/forgot-password" className="link-text forgot-password">
+            Forgot Password?
+          </Link>
+        </div>
       </div>
     </div>
   );
