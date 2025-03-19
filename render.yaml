@@ -21,7 +21,7 @@ services:
       - key: JWT_EXPIRY
         value: 24h
       - key: FRONTEND_URL
-        value: https://filmila.onrender.com
+        value: https://filmila-g8dn.onrender.com
       - key: API_PREFIX
         value: /api
       - key: AWS_ACCESS_KEY_ID
