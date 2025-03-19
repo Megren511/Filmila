@@ -55,7 +55,17 @@ if (fs.existsSync(frontendPath)) {
   console.log('\nFrontend build contents:', fs.readdirSync(frontendPath));
 }
 
-// Serve static files from the React app
+// Serve static files from the React app with proper MIME types
+app.use('/static', express.static(path.join(frontendPath, 'static'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    } else if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+  }
+}));
+
 app.use(express.static(frontendPath));
 
 // Handle React routing, return all requests to React app
@@ -64,24 +74,17 @@ app.get('*', (req, res) => {
   const indexPath = path.join(frontendPath, 'index.html');
   
   if (!fs.existsSync(indexPath)) {
-    return res.status(500).json({ 
-      message: `index.html not found at: ${indexPath}`,
-      error: { 
-        frontendPath,
-        indexPath,
-        cwd: process.cwd(),
-        dirname: __dirname,
-        env: process.env.NODE_ENV
-      }
-    });
+    console.error('Error: index.html not found at', indexPath);
+    return res.status(404).send('Frontend build not found');
   }
   
+  res.setHeader('Content-Type', 'text/html');
   res.sendFile(indexPath);
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error:', err.stack);
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
