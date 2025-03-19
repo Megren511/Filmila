@@ -1,49 +1,82 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import '../styles/Auth.css';
 
 function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('/api/auth/login', { email, password });
-      localStorage.setItem('token', response.data.token);
-      navigate('/dashboard');
+      const response = await axios.post('/api/auth/login', {
+        email: formData.email,
+        password: formData.password
+      });
+      
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('userType', response.data.userType);
+        // Redirect based on user type
+        navigate(response.data.userType === 'filmmaker' ? '/filmmaker-dashboard' : '/viewer-dashboard');
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
     }
   };
 
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   return (
-    <div className="container">
-      <h2>Login</h2>
-      {error && <div className="error">{error}</div>}
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label>Password:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit">Login</button>
-      </form>
+    <div className="auth-container">
+      <div className="auth-box">
+        <h2>Welcome Back</h2>
+        <p>Sign in to continue to Filmila</p>
+        
+        {error && <div className="error-message">{error}</div>}
+        
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Email"
+              required
+              className="form-input"
+            />
+          </div>
+          
+          <div className="form-group">
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Password"
+              required
+              className="form-input"
+            />
+          </div>
+          
+          <button type="submit" className="auth-button">
+            Sign In
+          </button>
+        </form>
+        
+        <p className="auth-link">
+          Don't have an account?{' '}
+          <span onClick={() => navigate('/')}>Get Started</span>
+        </p>
+      </div>
     </div>
   );
 }
