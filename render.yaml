@@ -20,52 +20,45 @@ services:
       CI=false DISABLE_ESLINT_PLUGIN=true npm run build
       echo "Frontend build contents:"
       ls -la build
+      cd ..
       
       echo "\n=== Building backend ==="
-      cd ../backend
+      cd backend
       echo "Backend directory: $PWD"
       ls -la
       npm ci --legacy-peer-deps
       npm run build
       npm run migrate
-      
-      echo "\n=== Setting up static files ==="
-      echo "Creating public directory..."
-      rm -rf public
-      mkdir -p public
-      echo "Copying frontend build..."
-      cp -rv ../frontend/build/* public/
-      echo "Public directory contents:"
-      ls -la public
+      cd ..
       
       echo "\n=== Final verification ==="
       pwd
-      echo "Public directory exists:"
-      test -d public && echo "Yes" || echo "No"
+      echo "Frontend build exists:"
+      test -d frontend/build && echo "Yes" || echo "No"
+      echo "Frontend build contents:"
+      ls -la frontend/build
+      echo "Frontend build size:"
+      du -sh frontend/build
       echo "index.html exists:"
-      test -f public/index.html && echo "Yes" || echo "No"
-      echo "Public directory contents:"
-      ls -la public
-      echo "Public directory size:"
-      du -sh public
+      test -f frontend/build/index.html && echo "Yes" || echo "No"
       echo "index.html contents (first few lines):"
-      head -n 5 public/index.html || echo "File not found or empty"
+      head -n 5 frontend/build/index.html || echo "File not found or empty"
     startCommand: |
       echo "=== Starting server ==="
       echo "Current directory: $PWD"
       ls -la
       
-      echo "\n=== Verifying public directory ==="
-      echo "Public directory exists:"
-      test -d public && echo "Yes" || echo "No"
-      echo "Public directory contents:"
-      ls -la public || echo "Directory not found"
+      echo "\n=== Verifying frontend build ==="
+      echo "Frontend build exists:"
+      test -d frontend/build && echo "Yes" || echo "No"
+      echo "Frontend build contents:"
+      ls -la frontend/build || echo "Directory not found"
       echo "index.html exists:"
-      test -f public/index.html && echo "Yes" || echo "No"
+      test -f frontend/build/index.html && echo "Yes" || echo "No"
       
       echo "\n=== Starting Node.js server ==="
-      NODE_ENV=production node src/app.js
-    rootDirectory: backend
+      cd backend && NODE_ENV=production node src/app.js
+    rootDirectory: .
     envVars:
       - key: NODE_ENV
         value: production
