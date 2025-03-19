@@ -2,7 +2,7 @@
   "name": "filmila-frontend",
   "version": "1.0.0",
   "private": true,
-  "homepage": ".",
+  "homepage": "/",
   "dependencies": {
     "@stripe/stripe-js": "^2.2.0",
     "@testing-library/jest-dom": "^5.17.0",
