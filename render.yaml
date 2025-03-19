@@ -6,58 +6,61 @@ services:
     nodeVersion: 16
     buildCommand: |
       echo "=== Starting build process ==="
-      echo "Current directory: $PWD"
+      pwd
       ls -la
       
-      echo "\n=== Installing dependencies ==="
-      npm ci --legacy-peer-deps
-      
+      # Build frontend
       echo "\n=== Building frontend ==="
       cd frontend
-      echo "Frontend directory: $PWD"
-      ls -la
       npm ci --legacy-peer-deps
       CI=false DISABLE_ESLINT_PLUGIN=true npm run build
-      echo "Frontend build contents:"
-      ls -la build
       cd ..
       
+      # Save frontend build path
+      FRONTEND_BUILD_PATH=$PWD/frontend/build
+      echo "FRONTEND_BUILD_PATH=$FRONTEND_BUILD_PATH" > .env
+      echo "\nFrontend build path: $FRONTEND_BUILD_PATH"
+      ls -la $FRONTEND_BUILD_PATH
+      
+      # Build backend
       echo "\n=== Building backend ==="
       cd backend
-      echo "Backend directory: $PWD"
-      ls -la
       npm ci --legacy-peer-deps
       npm run build
       npm run migrate
       cd ..
       
-      echo "\n=== Final verification ==="
-      pwd
-      echo "Frontend build exists:"
-      test -d frontend/build && echo "Yes" || echo "No"
-      echo "Frontend build contents:"
-      ls -la frontend/build
-      echo "Frontend build size:"
-      du -sh frontend/build
+      # Verify frontend build
+      echo "\n=== Verifying frontend build ==="
+      echo "Build directory exists:"
+      test -d $FRONTEND_BUILD_PATH && echo "Yes" || echo "No"
       echo "index.html exists:"
-      test -f frontend/build/index.html && echo "Yes" || echo "No"
-      echo "index.html contents (first few lines):"
-      head -n 5 frontend/build/index.html || echo "File not found or empty"
+      test -f $FRONTEND_BUILD_PATH/index.html && echo "Yes" || echo "No"
+      echo "Contents:"
+      ls -la $FRONTEND_BUILD_PATH
+      echo "First few lines of index.html:"
+      head -n 5 $FRONTEND_BUILD_PATH/index.html
     startCommand: |
       echo "=== Starting server ==="
-      echo "Current directory: $PWD"
+      pwd
       ls -la
       
-      echo "\n=== Verifying frontend build ==="
-      echo "Frontend build exists:"
-      test -d frontend/build && echo "Yes" || echo "No"
-      echo "Frontend build contents:"
-      ls -la frontend/build || echo "Directory not found"
-      echo "index.html exists:"
-      test -f frontend/build/index.html && echo "Yes" || echo "No"
+      # Export frontend build path
+      export FRONTEND_BUILD_PATH=$PWD/frontend/build
+      echo "FRONTEND_BUILD_PATH=$FRONTEND_BUILD_PATH"
       
-      echo "\n=== Starting Node.js server ==="
-      cd backend && NODE_ENV=production node src/app.js
+      # Verify frontend build
+      echo "\n=== Verifying frontend build ==="
+      echo "Build directory exists:"
+      test -d $FRONTEND_BUILD_PATH && echo "Yes" || echo "No"
+      echo "index.html exists:"
+      test -f $FRONTEND_BUILD_PATH/index.html && echo "Yes" || echo "No"
+      echo "Contents:"
+      ls -la $FRONTEND_BUILD_PATH
+      
+      # Start server
+      cd backend
+      NODE_ENV=production node src/app.js
     rootDirectory: .
     envVars:
       - key: NODE_ENV

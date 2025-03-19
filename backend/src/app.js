@@ -42,136 +42,34 @@ app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/videos', authMiddleware, videoRoutes);
 
 // Get the absolute path to the frontend build directory
-const frontendPath = process.env.NODE_ENV === 'production'
-  ? path.join(process.cwd(), '../frontend/build')
-  : path.join(__dirname, '../../frontend/build');
+const frontendPath = process.env.FRONTEND_BUILD_PATH || path.join(process.cwd(), '../frontend/build');
 
 console.log('\n=== Environment Information ===');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('Current working directory:', process.cwd());
 console.log('__dirname:', __dirname);
 console.log('Frontend path:', frontendPath);
-console.log('Absolute frontend path:', path.resolve(frontendPath));
-
-// List directory contents
-try {
-  console.log('\n=== Directory Structure ===');
-  console.log('Current directory contents:', fs.readdirSync(process.cwd()));
-  
-  const parentDir = path.dirname(process.cwd());
-  console.log('\nParent directory contents:', fs.readdirSync(parentDir));
-  
-  if (fs.existsSync(frontendPath)) {
-    console.log('\nFrontend build contents:', fs.readdirSync(frontendPath));
-    
-    const indexPath = path.join(frontendPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      const stats = fs.statSync(indexPath);
-      console.log('\nindex.html found!');
-      console.log('Size:', stats.size, 'bytes');
-      console.log('Created:', stats.birthtime);
-      console.log('Modified:', stats.mtime);
-      
-      // Read first few lines to verify content
-      const content = fs.readFileSync(indexPath, 'utf8').split('\n').slice(0, 5).join('\n');
-      console.log('\nFirst few lines of index.html:');
-      console.log(content);
-    }
-  } else {
-    console.error('\nFrontend build directory not found at:', frontendPath);
-    
-    // Try to find the build directory
-    const possiblePaths = [
-      path.join(process.cwd(), '../frontend/build'),
-      path.join(process.cwd(), 'frontend/build'),
-      path.join(__dirname, '../../frontend/build'),
-      path.join(__dirname, '../frontend/build')
-    ];
-    
-    console.log('\n=== Searching for frontend build ===');
-    possiblePaths.forEach(p => {
-      console.log(`\nChecking path: ${p}`);
-      console.log('Exists:', fs.existsSync(p));
-      if (fs.existsSync(p)) {
-        console.log('Contents:', fs.readdirSync(p));
-        
-        const indexPath = path.join(p, 'index.html');
-        if (fs.existsSync(indexPath)) {
-          const stats = fs.statSync(indexPath);
-          console.log('Found index.html!');
-          console.log('Size:', stats.size, 'bytes');
-          console.log('Created:', stats.birthtime);
-          console.log('Modified:', stats.mtime);
-        }
-      }
-    });
-  }
-} catch (err) {
-  console.error('\nError listing directories:', err);
-}
+console.log('Frontend path exists:', fs.existsSync(frontendPath));
 
 // Serve static files from the React frontend app
 app.use(express.static(frontendPath));
 
 // Handle React routing, return all requests to React app
 app.get('*', function(req, res) {
-  console.log('\n=== Handling Request ===');
-  console.log('Request URL:', req.url);
-  console.log('Current directory:', process.cwd());
-  console.log('__dirname:', __dirname);
-  console.log('Frontend path:', frontendPath);
-  console.log('Exists:', fs.existsSync(frontendPath));
-  
   const indexPath = path.join(frontendPath, 'index.html');
-  console.log('Looking for index.html at:', indexPath);
-  console.log('Exists:', fs.existsSync(indexPath));
   
   if (!fs.existsSync(indexPath)) {
-    console.error('index.html not found!');
-    
-    // Try to find index.html
-    const possiblePaths = [
-      path.join(process.cwd(), '../frontend/build/index.html'),
-      path.join(process.cwd(), 'frontend/build/index.html'),
-      path.join(__dirname, '../../frontend/build/index.html'),
-      path.join(__dirname, '../frontend/build/index.html')
-    ];
-    
-    console.log('\n=== Searching for index.html ===');
-    possiblePaths.forEach(p => {
-      console.log(`\nChecking path: ${p}`);
-      console.log('Exists:', fs.existsSync(p));
-      if (fs.existsSync(p)) {
-        const stats = fs.statSync(p);
-        console.log('Size:', stats.size, 'bytes');
-        console.log('Created:', stats.birthtime);
-        console.log('Modified:', stats.mtime);
-      }
-    });
-    
     return res.status(500).json({ 
       message: `index.html not found at: ${indexPath}`,
       error: { 
-        frontendPath, 
-        indexPath, 
+        frontendPath,
+        indexPath,
         cwd: process.cwd(),
         dirname: __dirname,
-        env: process.env.NODE_ENV,
-        searchedPaths: possiblePaths.map(p => ({
-          path: p,
-          exists: fs.existsSync(p),
-          size: fs.existsSync(p) ? fs.statSync(p).size : null,
-          stats: fs.existsSync(p) ? fs.statSync(p) : null
-        }))
+        env: process.env.NODE_ENV
       }
     });
   }
-  
-  const stats = fs.statSync(indexPath);
-  console.log('\nindex.html found!');
-  console.log('Size:', stats.size, 'bytes');
-  console.log('Created:', stats.birthtime);
-  console.log('Modified:', stats.mtime);
   
   res.sendFile(indexPath);
 });
@@ -187,15 +85,6 @@ app.listen(port, () => {
   
   if (fs.existsSync(frontendPath)) {
     console.log('\nFrontend build contents:', fs.readdirSync(frontendPath));
-    
-    const indexPath = path.join(frontendPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      const stats = fs.statSync(indexPath);
-      console.log('\nindex.html found!');
-      console.log('Size:', stats.size, 'bytes');
-      console.log('Created:', stats.birthtime);
-      console.log('Modified:', stats.mtime);
-    }
   }
 });
 
