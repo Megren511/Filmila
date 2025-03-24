@@ -1,12 +1,13 @@
 services:
-  # Backend API Service
+  # Combined Backend and Frontend Service
   - type: web
-    name: filmila-api
+    name: filmila
     env: node
     nodeVersion: 18.x
     buildCommand: |
-      cd backend
       npm install
+      cd frontend && npm install && npm run build
+      cd ../backend && npm install
     startCommand: cd backend && npm start
     rootDirectory: .
     envVars:
@@ -21,7 +22,7 @@ services:
       - key: JWT_EXPIRY
         value: 24h
       - key: FRONTEND_URL
-        value: https://filmila-g8dn.onrender.com
+        value: https://filmila.onrender.com
       - key: API_PREFIX
         value: /api
       - key: AWS_ACCESS_KEY_ID
@@ -34,24 +35,10 @@ services:
         value: filmila-videos
       - key: CLOUDFRONT_DOMAIN
         value: d1k0enfou8eft6.cloudfront.net
-
-  # Frontend Static Site
-  - type: web
-    name: filmila
-    env: static
-    buildCommand: cd frontend && npm ci --legacy-peer-deps && DISABLE_ESLINT_PLUGIN=true CI=false npm run build && ls -la build/
-    staticPublishPath: frontend/build
-    envVars:
       - key: REACT_APP_API_URL
         value: https://filmila.onrender.com/api
       - key: REACT_APP_CLOUDFRONT_DOMAIN
         value: d1k0enfou8eft6.cloudfront.net
-      - key: PUBLIC_URL
-        value: https://filmila-g8dn.onrender.com
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
 
 databases:
   - name: filmila_db

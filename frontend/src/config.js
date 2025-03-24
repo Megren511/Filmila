@@ -6,7 +6,7 @@ const config = {
     ? 'https://d1k0enfou8eft6.cloudfront.net'
     : 'http://localhost:8080/uploads',
   frontendUrl: process.env.NODE_ENV === 'production'
-    ? 'https://filmila-g8dn.onrender.com'
+    ? 'https://filmila.onrender.com'
     : 'http://localhost:3000'
 };
 
