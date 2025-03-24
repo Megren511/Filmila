@@ -10,6 +10,7 @@
     "migrate": "node src/db/migrate.js"
   },
   "dependencies": {
+    "aws-sdk": "^2.1450.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
