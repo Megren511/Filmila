@@ -5,6 +5,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import FilmmakerDashboard from './pages/FilmmakerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ViewerDashboard from './pages/ViewerDashboard';
@@ -94,6 +95,14 @@ function AppRoutes() {
               element={
                 <AuthRoute>
                   <Register />
+                </AuthRoute>
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={
+                <AuthRoute>
+                  <ForgotPassword />
                 </AuthRoute>
               }
             />

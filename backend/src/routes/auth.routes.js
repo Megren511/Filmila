@@ -3,9 +3,15 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { db } = require('../db');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const Mailjet = require('node-mailjet');
 
 const router = express.Router();
+
+// Configure Mailjet
+const mailjet = new Mailjet({
+  apiKey: process.env.MAILJET_API_KEY,
+  apiSecret: process.env.MAILJET_SECRET_KEY
+});
 
 // Login route
 router.post('/login', async (req, res) => {
@@ -135,49 +141,79 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Forgot Password - Request Reset
+// Forgot Password route
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
+    console.log('Password reset requested for:', email);
     
     // Check if user exists
-    const result = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+    const result = await db.query('SELECT id, email, status FROM users WHERE email = $1', [email]);
+    
+    // For security, don't reveal if user exists
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
+      console.log('User not found:', email);
+      return res.json({ message: 'If an account exists with this email, you will receive password reset instructions.' });
+    }
+
+    const user = result.rows[0];
+
+    // Check if user is active
+    if (user.status !== 'active') {
+      console.log('Inactive user requested password reset:', email);
+      return res.json({ message: 'If an account exists with this email, you will receive password reset instructions.' });
     }
 
     // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
 
+    console.log('Generated reset token for user:', email);
+
     // Save reset token to database
     await db.query(
-      'UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE email = $3',
-      [resetToken, resetTokenExpiry, email]
+      'UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE id = $3',
+      [resetToken, resetTokenExpiry, user.id]
     );
 
-    // Create email transporter
-    const transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      }
-    });
-
-    // Send reset email
+    // Create reset URL
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-    await transporter.sendMail({
-      to: email,
-      subject: 'Password Reset Request',
-      html: `Please click this link to reset your password: <a href="${resetUrl}">Reset Password</a><br>
-             This link will expire in 1 hour.`
+    console.log('Reset URL:', resetUrl);
+
+    // Send email using Mailjet
+    const request = await mailjet.post('send', { version: 'v3.1' }).request({
+      Messages: [
+        {
+          From: {
+            Email: process.env.MAILJET_FROM_EMAIL,
+            Name: process.env.MAILJET_FROM_NAME
+          },
+          To: [
+            {
+              Email: email,
+              Name: email.split('@')[0]
+            }
+          ],
+          Subject: 'Filmila - Password Reset Request',
+          HTMLPart: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #333;">Password Reset Request</h2>
+              <p>You requested to reset your password for your Filmila account.</p>
+              <p>Please click the button below to reset your password. This link will expire in 1 hour.</p>
+              <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #4a90e2; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0;">Reset Password</a>
+              <p>If you didn't request this, you can safely ignore this email.</p>
+              <p>Best regards,<br>The Filmila Team</p>
+            </div>
+          `
+        }
+      ]
     });
 
-    res.json({ message: 'Password reset email sent' });
+    console.log('Reset email sent successfully to:', email);
+    res.json({ message: 'If an account exists with this email, you will receive password reset instructions.' });
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'An error occurred while processing your request. Please try again later.' });
   }
 });
 

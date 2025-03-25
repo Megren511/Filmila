@@ -1,5 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const morgan = require('morgan');
+const helmet = require('helmet');
+const compression = require('compression');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const { db } = require('./db');
@@ -12,10 +15,20 @@ const { authMiddleware } = require('./middleware/auth');
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Configure CORS
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://filmila.com', 'http://localhost:3000']
+    : 'http://localhost:3000',
+  credentials: true
+}));
+
+// Security middleware
+app.use(helmet());
+app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(morgan('dev'));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -25,7 +38,7 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Health check endpoint
-app.get('/health', async (req, res) => {
+app.get('/api/health', async (req, res) => {
   try {
     await db.query('SELECT 1');
     res.json({ status: 'healthy', database: 'connected' });
@@ -52,6 +65,10 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Error handling
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something broke!' });
+});
 app.use(errorHandler);
 
 module.exports = app;
