@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "https://filmila.com/static/css/main.2f6a010b.css",
-    "main.js": "https://filmila.com/static/js/main.0299ef67.js",
+    "main.css": "https://filmila.com/static/css/main.2598c9fe.css",
+    "main.js": "https://filmila.com/static/js/main.b9df216d.js",
     "index.html": "https://filmila.com/index.html",
-    "main.2f6a010b.css.map": "https://filmila.com/static/css/main.2f6a010b.css.map",
-    "main.0299ef67.js.map": "https://filmila.com/static/js/main.0299ef67.js.map"
+    "main.2598c9fe.css.map": "https://filmila.com/static/css/main.2598c9fe.css.map",
+    "main.b9df216d.js.map": "https://filmila.com/static/js/main.b9df216d.js.map"
   },
   "entrypoints": [
-    "static/css/main.2f6a010b.css",
-    "static/js/main.0299ef67.js"
+    "static/css/main.2598c9fe.css",
+    "static/js/main.b9df216d.js"
   ]
 }

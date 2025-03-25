@@ -12,7 +12,8 @@ import ViewerDashboard from './pages/ViewerDashboard';
 import UploadFilm from './pages/UploadFilm';
 import './App.css';
 
-function App() {
+// Move PrivateRoute and AuthRoute inside a separate component
+function AppRoutes() {
   const { user } = useAuth();
 
   const PrivateRoute = ({ children, requiredRole }) => {
@@ -74,77 +75,83 @@ function App() {
   };
 
   return (
-    <Router>
-      <div className="app">
-        <Navbar />
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            
-            {/* Auth Routes */}
-            <Route
-              path="/login"
-              element={
-                <AuthRoute>
-                  <Login />
-                </AuthRoute>
-              }
-            />
-            <Route
-              path="/register"
-              element={
-                <AuthRoute>
-                  <Register />
-                </AuthRoute>
-              }
-            />
-            <Route
-              path="/forgot-password"
-              element={
-                <AuthRoute>
-                  <ForgotPassword />
-                </AuthRoute>
-              }
-            />
-            
-            {/* Role-based Dashboard Routes */}
-            <Route
-              path="/admin-dashboard"
-              element={
-                <PrivateRoute requiredRole="admin">
-                  <AdminDashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/filmmaker-dashboard"
-              element={
-                <PrivateRoute requiredRole="filmmaker">
-                  <FilmmakerDashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/viewer-dashboard"
-              element={
-                <PrivateRoute requiredRole="viewer">
-                  <ViewerDashboard />
-                </PrivateRoute>
-              }
-            />
+    <div className="app">
+      <Navbar />
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          
+          {/* Auth Routes */}
+          <Route
+            path="/login"
+            element={
+              <AuthRoute>
+                <Login />
+              </AuthRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <AuthRoute>
+                <Register />
+              </AuthRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <AuthRoute>
+                <ForgotPassword />
+              </AuthRoute>
+            }
+          />
 
-            {/* Upload Film Route */}
-            <Route
-              path="/upload-film"
-              element={
-                <PrivateRoute requiredRole="filmmaker">
-                  <UploadFilm />
-                </PrivateRoute>
-              }
-            />
-          </Routes>
-        </main>
-      </div>
+          {/* Protected Routes */}
+          <Route
+            path="/admin-dashboard"
+            element={
+              <PrivateRoute requiredRole="admin">
+                <AdminDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/filmmaker-dashboard"
+            element={
+              <PrivateRoute requiredRole="filmmaker">
+                <FilmmakerDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/viewer-dashboard"
+            element={
+              <PrivateRoute requiredRole="viewer">
+                <ViewerDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/upload-film"
+            element={
+              <PrivateRoute requiredRole="filmmaker">
+                <UploadFilm />
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </main>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </Router>
   );
 }
