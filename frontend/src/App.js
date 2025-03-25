@@ -12,7 +12,7 @@ import ViewerDashboard from './pages/ViewerDashboard';
 import UploadFilm from './pages/UploadFilm';
 import './App.css';
 
-function AppRoutes() {
+function App() {
   const { user } = useAuth();
 
   const PrivateRoute = ({ children, requiredRole }) => {
@@ -29,8 +29,8 @@ function AppRoutes() {
       // Redirect to appropriate dashboard based on role
       switch (user.role) {
         case 'admin':
-          console.log('PrivateRoute - Redirecting admin to /admin');
-          return <Navigate to="/admin" />;
+          console.log('PrivateRoute - Redirecting admin to /admin-dashboard');
+          return <Navigate to="/admin-dashboard" />;
         case 'filmmaker':
           console.log('PrivateRoute - Redirecting filmmaker to /filmmaker-dashboard');
           return <Navigate to="/filmmaker-dashboard" />;
@@ -55,8 +55,8 @@ function AppRoutes() {
       console.log('AuthRoute - User is logged in, redirecting to appropriate dashboard');
       switch (user.role) {
         case 'admin':
-          console.log('AuthRoute - Redirecting admin to /admin');
-          return <Navigate to="/admin" />;
+          console.log('AuthRoute - Redirecting admin to /admin-dashboard');
+          return <Navigate to="/admin-dashboard" />;
         case 'filmmaker':
           console.log('AuthRoute - Redirecting filmmaker to /filmmaker-dashboard');
           return <Navigate to="/filmmaker-dashboard" />;
@@ -109,7 +109,7 @@ function AppRoutes() {
             
             {/* Role-based Dashboard Routes */}
             <Route
-              path="/admin"
+              path="/admin-dashboard"
               element={
                 <PrivateRoute requiredRole="admin">
                   <AdminDashboard />
@@ -133,7 +133,7 @@ function AppRoutes() {
               }
             />
 
-            {/* Filmmaker Features */}
+            {/* Upload Film Route */}
             <Route
               path="/upload-film"
               element={
@@ -142,21 +142,10 @@ function AppRoutes() {
                 </PrivateRoute>
               }
             />
-
-            {/* 404 Route */}
-            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
       </div>
     </Router>
-  );
-}
-
-function App() {
-  return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
   );
 }
 

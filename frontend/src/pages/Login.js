@@ -17,10 +17,12 @@ function Login() {
       setError('');
       setLoading(true);
       const user = await login(email, password);
+      console.log('Login successful, redirecting user with role:', user.role);
+      
       // Navigate based on user role
       switch (user.role) {
         case 'admin':
-          navigate('/admin');
+          navigate('/admin-dashboard');
           break;
         case 'filmmaker':
           navigate('/filmmaker-dashboard');
@@ -32,6 +34,7 @@ function Login() {
           navigate('/');
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError(err.response?.data?.message || 'Failed to log in');
     } finally {
       setLoading(false);

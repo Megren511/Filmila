@@ -60,20 +60,19 @@ function AdminDashboard() {
       const verifyResponse = await apiService.get('/admin/verify');
       console.log('Admin verification response:', verifyResponse.data);
 
-      const [statsRes, filmsRes, revenueRes] = await Promise.all([
-        apiService.get('/admin/statistics'),
-        apiService.get('/admin/films/pending'),
-        apiService.get('/admin/revenue/chart')
-      ]);
-
-      console.log('Admin dashboard data loaded:', {
-        stats: statsRes.data,
-        pendingFilms: filmsRes.data,
-        revenue: revenueRes.data
-      });
-
+      // Load statistics
+      const statsRes = await apiService.get('/admin/statistics');
+      console.log('Statistics loaded:', statsRes.data);
       setStats(statsRes.data);
+
+      // Load pending films
+      const filmsRes = await apiService.get('/admin/films/pending');
+      console.log('Pending films loaded:', filmsRes.data);
       setPendingFilms(filmsRes.data);
+
+      // Load revenue data
+      const revenueRes = await apiService.get('/admin/revenue/chart');
+      console.log('Revenue data loaded:', revenueRes.data);
       setRevenueData({
         labels: revenueRes.data.map(d => new Date(d.date).toLocaleDateString()),
         datasets: [
@@ -95,7 +94,7 @@ function AdminDashboard() {
       console.error('Error loading admin dashboard:', error);
       setError(error.response?.data?.message || 'Failed to load admin dashboard');
       if (error.response?.status === 403) {
-        console.log('Access denied, redirecting to appropriate dashboard');
+        console.log('Access denied, redirecting to home');
         navigate('/');
       }
     } finally {
@@ -109,6 +108,7 @@ function AdminDashboard() {
       setPendingFilms(pendingFilms.filter(film => film.id !== filmId));
     } catch (error) {
       console.error('Error updating film status:', error);
+      setError(error.response?.data?.message || 'Failed to update film status');
     }
   };
 
@@ -120,6 +120,7 @@ function AdminDashboard() {
       ));
     } catch (error) {
       console.error('Error updating user status:', error);
+      setError(error.response?.data?.message || 'Failed to update user status');
     }
   };
 
@@ -129,15 +130,28 @@ function AdminDashboard() {
       setReports(reports.filter(report => report.id !== reportId));
     } catch (error) {
       console.error('Error handling report:', error);
+      setError(error.response?.data?.message || 'Failed to handle report');
     }
   };
 
   if (loading) {
-    return <div className="loading">Loading dashboard...</div>;
+    return (
+      <div className="admin-dashboard loading-state">
+        <div className="loading">Loading dashboard...</div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="error">{error}</div>;
+    return (
+      <div className="admin-dashboard error-state">
+        <div className="error">
+          <h2>Error</h2>
+          <p>{error}</p>
+          <button onClick={loadDashboardData}>Try Again</button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -199,151 +213,51 @@ function AdminDashboard() {
               </div>
               <div className="stat-card">
                 <h3>Average Rating</h3>
-                <p>{stats.average_rating.toFixed(1)}/5.0</p>
+                <p>{stats.average_rating.toFixed(1)}</p>
                 <small>{stats.total_reviews} reviews</small>
               </div>
             </div>
 
-            <div className="chart-container">
-              <h2>Revenue & Views (Last 30 Days)</h2>
-              {revenueData && <Line data={revenueData} />}
-            </div>
+            {revenueData && (
+              <div className="chart-container">
+                <h3>Revenue & Views Over Time</h3>
+                <Line
+                  data={revenueData}
+                  options={{
+                    responsive: true,
+                    scales: {
+                      y: {
+                        beginAtZero: true
+                      }
+                    }
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === 'films' && (
           <div className="films-section">
-            <h2>Pending Film Approvals</h2>
+            <h2>Pending Films</h2>
             <div className="films-grid">
               {pendingFilms.map(film => (
                 <div key={film.id} className="film-card">
-                  <img src={film.poster_url} alt={film.title} />
-                  <div className="film-info">
-                    <h3>{film.title}</h3>
-                    <p>{film.description}</p>
-                    <div className="film-meta">
-                      <span>By: {film.filmer_name}</span>
-                      <span>Genre: {film.genre}</span>
-                      <span>Price: ${film.price}</span>
-                    </div>
-                    <div className="film-actions">
-                      <button
-                        className="btn-approve"
-                        onClick={() => handleFilmApproval(film.id, 'approved')}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        className="btn-reject"
-                        onClick={() => {
-                          const reason = prompt('Enter rejection reason:');
-                          if (reason) handleFilmApproval(film.id, 'rejected', reason);
-                        }}
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'users' && (
-          <div className="users-section">
-            <div className="users-filters">
-              <input
-                type="text"
-                placeholder="Search users..."
-                onChange={(e) => {
-                  // Implement user search
-                }}
-              />
-              <select onChange={(e) => {
-                // Implement role filter
-              }}>
-                <option value="">All Roles</option>
-                <option value="filmmaker">Filmmakers</option>
-                <option value="viewer">Viewers</option>
-              </select>
-            </div>
-
-            <table className="users-table">
-              <thead>
-                <tr>
-                  <th>Username</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Joined</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map(user => (
-                  <tr key={user.id}>
-                    <td>{user.username}</td>
-                    <td>{user.email}</td>
-                    <td>{user.role}</td>
-                    <td>{user.status}</td>
-                    <td>{new Date(user.created_at).toLocaleDateString()}</td>
-                    <td>
-                      <button
-                        className={user.status === 'active' ? 'btn-suspend' : 'btn-activate'}
-                        onClick={() => {
-                          const newStatus = user.status === 'active' ? 'suspended' : 'active';
-                          const reason = newStatus === 'suspended' ? prompt('Enter suspension reason:') : '';
-                          handleUserStatus(user.id, newStatus, reason);
-                        }}
-                      >
-                        {user.status === 'active' ? 'Suspend' : 'Activate'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {activeTab === 'reports' && (
-          <div className="reports-section">
-            <h2>Reported Content</h2>
-            <div className="reports-grid">
-              {reports.map(report => (
-                <div key={report.id} className="report-card">
-                  <div className="report-header">
-                    <span className="report-type">{report.type}</span>
-                    <span className="report-date">
-                      {new Date(report.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="report-content">
-                    <p><strong>Reporter:</strong> {report.reporter_name}</p>
-                    <p><strong>Reported:</strong> {report.reported_user_name}</p>
-                    {report.film_title && (
-                      <p><strong>Film:</strong> {report.film_title}</p>
-                    )}
-                    <p><strong>Reason:</strong> {report.reason}</p>
-                  </div>
-                  <div className="report-actions">
+                  <h3>{film.title}</h3>
+                  <p>By: {film.filmer_name}</p>
+                  <p>Submitted: {new Date(film.created_at).toLocaleDateString()}</p>
+                  <div className="approval-buttons">
                     <button
-                      className="btn-resolve"
-                      onClick={() => {
-                        const action = prompt('Enter action taken:');
-                        if (action) {
-                          handleReport(report.id, 'resolved', action, '');
-                        }
-                      }}
+                      className="btn-approve"
+                      onClick={() => handleFilmApproval(film.id, 'approved')}
                     >
-                      Resolve
+                      Approve
                     </button>
                     <button
-                      className="btn-dismiss"
-                      onClick={() => handleReport(report.id, 'dismissed', 'No action needed', '')}
+                      className="btn-reject"
+                      onClick={() => handleFilmApproval(film.id, 'rejected', 'Content guidelines violation')}
                     >
-                      Dismiss
+                      Reject
                     </button>
                   </div>
                 </div>
