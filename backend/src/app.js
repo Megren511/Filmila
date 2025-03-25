@@ -6,6 +6,8 @@ const { db } = require('./db');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const videoRoutes = require('./routes/video.routes');
+const adminRoutes = require('./routes/admin.routes');
+const filmRoutes = require('./routes/film.routes');
 const { errorHandler } = require('./middleware/error');
 const { authMiddleware } = require('./middleware/auth');
 const fs = require('fs');
@@ -23,7 +25,7 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100 // limit each IP to 100 requests per windowMs
 });
-app.use(limiter);
+app.use('/api/', limiter);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -39,6 +41,8 @@ app.get('/health', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/videos', authMiddleware, videoRoutes);
+app.use('/api/films', filmRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Log environment information
 console.log('\n=== Environment Information ===');
