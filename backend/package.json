@@ -1,26 +1,30 @@
 {
   "name": "filmila-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "src/app.js",
+  "description": "Backend for Filmila short film platform",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest",
     "build": "echo 'No build step needed'",
     "migrate": "node src/db/migrate.js"
   },
   "dependencies": {
-    "aws-sdk": "^2.1450.0",
+    "aws-sdk": "^2.1550.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
+    "dotenv": "^16.4.1",
     "express": "^4.18.2",
     "express-rate-limit": "^6.7.0",
-    "jsonwebtoken": "^9.0.0",
-    "nodemailer": "^6.9.1",
-    "pg": "^8.10.0"
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.9",
+    "pg": "^8.11.3",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22"
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.3"
   }
 }
