@@ -5,15 +5,12 @@ const rateLimit = require('express-rate-limit');
 const { db } = require('./db');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
-const videoRoutes = require('./routes/video.routes');
 const adminRoutes = require('./routes/admin.routes');
 const filmRoutes = require('./routes/film.routes');
 const { errorHandler } = require('./middleware/error');
 const { authMiddleware } = require('./middleware/auth');
-const fs = require('fs');
 
 const app = express();
-const port = process.env.PORT || 8080;
 
 // Middleware
 app.use(cors());
@@ -40,66 +37,21 @@ app.get('/health', async (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
-app.use('/api/videos', authMiddleware, videoRoutes);
 app.use('/api/films', filmRoutes);
 app.use('/api/admin', adminRoutes);
 
-// Log environment information
-console.log('\n=== Environment Information ===');
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('Current working directory:', process.cwd());
-console.log('__dirname:', __dirname);
+// Serve static files from frontend build directory in production
+if (process.env.NODE_ENV === 'production') {
+  const frontendPath = path.join(__dirname, '../../frontend/build');
+  app.use(express.static(frontendPath));
 
-// Configure frontend path
-const frontendPath = process.env.FRONTEND_BUILD_PATH || path.join(__dirname, '../../frontend/build');
-console.log('Frontend path:', frontendPath);
-console.log('Frontend path exists:', fs.existsSync(frontendPath));
-
-if (fs.existsSync(frontendPath)) {
-  console.log('\nFrontend build contents:', fs.readdirSync(frontendPath));
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
 }
-
-// Serve static files from the React app with proper MIME types
-app.use('/static', express.static(path.join(frontendPath, 'static'), {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript');
-    } else if (filePath.endsWith('.css')) {
-      res.setHeader('Content-Type', 'text/css');
-    }
-  }
-}));
-
-app.use(express.static(frontendPath));
-
-// Handle React routing, return all requests to React app
-app.get('*', (req, res) => {
-  console.log('Serving index.html for path:', req.path);
-  const indexPath = path.join(frontendPath, 'index.html');
-  
-  if (!fs.existsSync(indexPath)) {
-    console.error('Error: index.html not found at', indexPath);
-    return res.status(404).send('Frontend build not found');
-  }
-  
-  res.setHeader('Content-Type', 'text/html');
-  res.sendFile(indexPath);
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
-});
 
 // Error handling
 app.use(errorHandler);
-
-// Start server
-app.listen(port, () => {
-  console.log(`\n=== Server Started ===`);
-  console.log(`Server is running on port ${port}`);
-  console.log(`Frontend will be served from: ${frontendPath}\n`);
-});
 
 module.exports = app;

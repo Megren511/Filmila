@@ -16,8 +16,21 @@ function Login() {
     try {
       setError('');
       setLoading(true);
-      await login(email, password);
-      navigate('/');
+      const user = await login(email, password);
+      // Navigate based on user role
+      switch (user.role) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'filmmaker':
+          navigate('/filmmaker-dashboard');
+          break;
+        case 'viewer':
+          navigate('/viewer-dashboard');
+          break;
+        default:
+          navigate('/');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to log in');
     } finally {

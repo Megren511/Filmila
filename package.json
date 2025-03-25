@@ -1,18 +1,31 @@
 {
   "name": "filmila",
   "version": "1.0.0",
-  "description": "Filmila video streaming platform",
-  "private": true,
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
+  "description": "Filmila - Short Film Platform",
+  "main": "index.js",
+  "private": false,
   "scripts": {
+    "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "build": "cd frontend && npm run build && cd ../backend && npm run build",
     "start": "cd backend && npm start",
-    "build": "cd frontend && npm run build",
-    "dev": "cd backend && npm run dev"
+    "dev": "concurrently \"cd frontend && npm start\" \"cd backend && npm run dev\""
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "film",
+    "streaming",
+    "platform"
+  ],
+  "author": "",
+  "license": "ISC",
   "devDependencies": {
-    "concurrently": "^8.0.0"
-  }
+    "concurrently": "^8.2.2"
+  },
+  "cacheDirectories": [
+    "node_modules",
+    "frontend/node_modules",
+    "backend/node_modules"
+  ]
 }

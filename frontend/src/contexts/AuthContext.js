@@ -15,6 +15,7 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('token');
     if (token) {
       const userData = JSON.parse(localStorage.getItem('user'));
+      console.log('Restoring auth state from localStorage:', userData);
       setUser(userData);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
@@ -23,14 +24,17 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
+      console.log('Attempting login for:', email);
       const response = await axios.post('/api/auth/login', { email, password });
       const { token, user } = response.data;
+      console.log('Login successful, user data:', user);
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
       return user;
     } catch (error) {
+      console.error('Login error:', error);
       throw error;
     }
   };

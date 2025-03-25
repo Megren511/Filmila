@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { db } = require('../db');
 
 const router = express.Router();
@@ -23,7 +23,7 @@ const upload = multer({
 });
 
 // Upload film with poster
-router.post('/upload', auth, upload.fields([
+router.post('/upload', authMiddleware, upload.fields([
   { name: 'film', maxCount: 1 },
   { name: 'poster', maxCount: 1 }
 ]), async (req, res) => {
@@ -82,7 +82,7 @@ router.post('/upload', auth, upload.fields([
 });
 
 // Get filmmaker's films
-router.get('/my-films', auth, async (req, res) => {
+router.get('/my-films', authMiddleware, async (req, res) => {
   try {
     const films = await db.query(
       `SELECT 
@@ -107,7 +107,7 @@ router.get('/my-films', auth, async (req, res) => {
 });
 
 // Get filmmaker stats
-router.get('/filmmaker/stats', auth, async (req, res) => {
+router.get('/filmmaker/stats', authMiddleware, async (req, res) => {
   try {
     const stats = await db.query(
       `SELECT 
@@ -128,7 +128,7 @@ router.get('/filmmaker/stats', auth, async (req, res) => {
 });
 
 // Update film details
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const { title, description, genre, price, tags } = req.body;
     const filmId = req.params.id;
@@ -154,7 +154,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // Delete film
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const filmId = req.params.id;
 

@@ -29,12 +29,22 @@ ChartJS.register(
 function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    total_films: 0,
+    pending_films: 0,
+    total_filmmakers: 0,
+    total_viewers: 0,
+    total_revenue: 0,
+    total_views: 0,
+    average_rating: 0,
+    total_reviews: 0
+  });
   const [pendingFilms, setPendingFilms] = useState([]);
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState([]);
   const [revenueData, setRevenueData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -42,11 +52,25 @@ function AdminDashboard() {
 
   const loadDashboardData = async () => {
     try {
+      setLoading(true);
+      setError(null);
+      console.log('Loading admin dashboard data...');
+
+      // First verify admin access
+      const verifyResponse = await apiService.get('/admin/verify');
+      console.log('Admin verification response:', verifyResponse.data);
+
       const [statsRes, filmsRes, revenueRes] = await Promise.all([
         apiService.get('/admin/statistics'),
         apiService.get('/admin/films/pending'),
         apiService.get('/admin/revenue/chart')
       ]);
+
+      console.log('Admin dashboard data loaded:', {
+        stats: statsRes.data,
+        pendingFilms: filmsRes.data,
+        revenue: revenueRes.data
+      });
 
       setStats(statsRes.data);
       setPendingFilms(filmsRes.data);
@@ -68,7 +92,12 @@ function AdminDashboard() {
         ]
       });
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
+      console.error('Error loading admin dashboard:', error);
+      setError(error.response?.data?.message || 'Failed to load admin dashboard');
+      if (error.response?.status === 403) {
+        console.log('Access denied, redirecting to appropriate dashboard');
+        navigate('/');
+      }
     } finally {
       setLoading(false);
     }
@@ -105,6 +134,10 @@ function AdminDashboard() {
 
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
+  }
+
+  if (error) {
+    return <div className="error">{error}</div>;
   }
 
   return (

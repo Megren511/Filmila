@@ -1,27 +1,74 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import FilmmakerDashboard from './pages/FilmmakerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import ViewerDashboard from './pages/ViewerDashboard';
 import UploadFilm from './pages/UploadFilm';
 import './App.css';
 
-function App() {
+function AppRoutes() {
   const { user } = useAuth();
 
   const PrivateRoute = ({ children, requiredRole }) => {
+    console.log('PrivateRoute - Current user:', user);
+    console.log('PrivateRoute - Required role:', requiredRole);
+
     if (!user) {
+      console.log('PrivateRoute - No user, redirecting to login');
       return <Navigate to="/login" />;
     }
 
     if (requiredRole && user.role !== requiredRole) {
-      return <Navigate to="/" />;
+      console.log(`PrivateRoute - User role ${user.role} doesn't match required role ${requiredRole}`);
+      // Redirect to appropriate dashboard based on role
+      switch (user.role) {
+        case 'admin':
+          console.log('PrivateRoute - Redirecting admin to /admin');
+          return <Navigate to="/admin" />;
+        case 'filmmaker':
+          console.log('PrivateRoute - Redirecting filmmaker to /filmmaker-dashboard');
+          return <Navigate to="/filmmaker-dashboard" />;
+        case 'viewer':
+          console.log('PrivateRoute - Redirecting viewer to /viewer-dashboard');
+          return <Navigate to="/viewer-dashboard" />;
+        default:
+          console.log('PrivateRoute - Unknown role, redirecting to login');
+          return <Navigate to="/login" />;
+      }
     }
 
+    console.log('PrivateRoute - Access granted');
+    return children;
+  };
+
+  // Redirect to appropriate dashboard if user is logged in
+  const AuthRoute = ({ children }) => {
+    console.log('AuthRoute - Current user:', user);
+
+    if (user) {
+      console.log('AuthRoute - User is logged in, redirecting to appropriate dashboard');
+      switch (user.role) {
+        case 'admin':
+          console.log('AuthRoute - Redirecting admin to /admin');
+          return <Navigate to="/admin" />;
+        case 'filmmaker':
+          console.log('AuthRoute - Redirecting filmmaker to /filmmaker-dashboard');
+          return <Navigate to="/filmmaker-dashboard" />;
+        case 'viewer':
+          console.log('AuthRoute - Redirecting viewer to /viewer-dashboard');
+          return <Navigate to="/viewer-dashboard" />;
+        default:
+          console.log('AuthRoute - Unknown role, redirecting to login');
+          return <Navigate to="/login" />;
+      }
+    }
+
+    console.log('AuthRoute - No user, showing login/register form');
     return children;
   };
 
@@ -32,10 +79,34 @@ function App() {
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
             
-            {/* Filmmaker Routes */}
+            {/* Auth Routes */}
+            <Route
+              path="/login"
+              element={
+                <AuthRoute>
+                  <Login />
+                </AuthRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <AuthRoute>
+                  <Register />
+                </AuthRoute>
+              }
+            />
+            
+            {/* Role-based Dashboard Routes */}
+            <Route
+              path="/admin"
+              element={
+                <PrivateRoute requiredRole="admin">
+                  <AdminDashboard />
+                </PrivateRoute>
+              }
+            />
             <Route
               path="/filmmaker-dashboard"
               element={
@@ -45,20 +116,20 @@ function App() {
               }
             />
             <Route
-              path="/upload-film"
+              path="/viewer-dashboard"
               element={
-                <PrivateRoute requiredRole="filmmaker">
-                  <UploadFilm />
+                <PrivateRoute requiredRole="viewer">
+                  <ViewerDashboard />
                 </PrivateRoute>
               }
             />
 
-            {/* Admin Routes */}
+            {/* Filmmaker Features */}
             <Route
-              path="/admin/*"
+              path="/upload-film"
               element={
-                <PrivateRoute requiredRole="admin">
-                  <AdminDashboard />
+                <PrivateRoute requiredRole="filmmaker">
+                  <UploadFilm />
                 </PrivateRoute>
               }
             />
@@ -69,6 +140,14 @@ function App() {
         </main>
       </div>
     </Router>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }
 
