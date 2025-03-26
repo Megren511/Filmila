@@ -39,27 +39,43 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     try {
       console.log('Making login request to:', `${config.apiUrl}/auth/login`);
-      const response = await axios.post('/auth/login', { email, password });
-      console.log('Login response:', response.data);
+      console.log('Request payload:', { email, password });
       
-      if (!response.data || !response.data.user) {
-        throw new Error('Invalid response from server: missing user data');
+      const response = await axios.post('/auth/login', { email, password });
+      console.log('Raw login response:', response);
+      console.log('Login response data:', response.data);
+      
+      if (!response.data) {
+        console.error('No data in response');
+        throw new Error('Invalid response from server: no data');
       }
       
       const { token, user } = response.data;
+      console.log('Extracted token and user:', { token: token ? 'present' : 'missing', user });
       
-      if (!user || !user.role) {
+      if (!token) {
+        console.error('No token in response');
+        throw new Error('Invalid response from server: missing token');
+      }
+      
+      if (!user) {
+        console.error('No user data in response');
+        throw new Error('Invalid response from server: missing user data');
+      }
+      
+      if (!user.role) {
+        console.error('No role in user data:', user);
         throw new Error('Invalid user data: missing role');
       }
       
-      console.log('Login successful, user data:', user);
+      console.log('Login successful, storing data...');
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
       return user;
     } catch (error) {
-      console.error('Login error details:', {
+      console.error('Login error:', {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
