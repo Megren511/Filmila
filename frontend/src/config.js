@@ -1,6 +1,6 @@
 const config = {
   apiUrl: process.env.NODE_ENV === 'production'
-    ? 'https://filmila.onrender.com/api'
+    ? 'https://filmila-webapp.onrender.com/api'
     : 'http://localhost:8080/api',
   cdnUrl: process.env.REACT_APP_CLOUDFRONT_DOMAIN
     ? `https://${process.env.REACT_APP_CLOUDFRONT_DOMAIN}`
