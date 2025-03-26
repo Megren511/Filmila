@@ -6,7 +6,7 @@ const config = {
     ? `https://${process.env.REACT_APP_CLOUDFRONT_DOMAIN}`
     : 'http://localhost:8080/uploads',
   frontendUrl: process.env.NODE_ENV === 'production'
-    ? 'https://filmila.onrender.com'
+    ? 'https://filmila-g8dn.onrender.com'
     : 'http://localhost:3000'
 };
 
