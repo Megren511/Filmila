@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -22,7 +22,7 @@ function AppRoutes() {
 
     if (!user) {
       console.log('PrivateRoute - No user, redirecting to login');
-      return <Navigate to="/login" />;
+      return <Navigate to="/login" replace />;
     }
 
     if (requiredRole && user.role !== requiredRole) {
@@ -31,16 +31,16 @@ function AppRoutes() {
       switch (user.role) {
         case 'admin':
           console.log('PrivateRoute - Redirecting admin to /admin-dashboard');
-          return <Navigate to="/admin-dashboard" />;
+          return <Navigate to="/admin-dashboard" replace />;
         case 'filmmaker':
           console.log('PrivateRoute - Redirecting filmmaker to /filmmaker-dashboard');
-          return <Navigate to="/filmmaker-dashboard" />;
+          return <Navigate to="/filmmaker-dashboard" replace />;
         case 'viewer':
           console.log('PrivateRoute - Redirecting viewer to /viewer-dashboard');
-          return <Navigate to="/viewer-dashboard" />;
+          return <Navigate to="/viewer-dashboard" replace />;
         default:
           console.log('PrivateRoute - Unknown role, redirecting to login');
-          return <Navigate to="/login" />;
+          return <Navigate to="/login" replace />;
       }
     }
 
@@ -57,16 +57,16 @@ function AppRoutes() {
       switch (user.role) {
         case 'admin':
           console.log('AuthRoute - Redirecting admin to /admin-dashboard');
-          return <Navigate to="/admin-dashboard" />;
+          return <Navigate to="/admin-dashboard" replace />;
         case 'filmmaker':
           console.log('AuthRoute - Redirecting filmmaker to /filmmaker-dashboard');
-          return <Navigate to="/filmmaker-dashboard" />;
+          return <Navigate to="/filmmaker-dashboard" replace />;
         case 'viewer':
           console.log('AuthRoute - Redirecting viewer to /viewer-dashboard');
-          return <Navigate to="/viewer-dashboard" />;
+          return <Navigate to="/viewer-dashboard" replace />;
         default:
           console.log('AuthRoute - Unknown role, redirecting to login');
-          return <Navigate to="/login" />;
+          return <Navigate to="/login" replace />;
       }
     }
 
@@ -140,6 +140,9 @@ function AppRoutes() {
               </PrivateRoute>
             }
           />
+
+          {/* Catch-all route */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>
