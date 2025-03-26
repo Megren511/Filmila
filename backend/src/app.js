@@ -1,15 +1,11 @@
 const express = require('express');
 const cors = require('cors');
-const morgan = require('morgan');
-const helmet = require('helmet');
-const compression = require('compression');
 const path = require('path');
-const rateLimit = require('express-rate-limit');
-const { db } = require('./db');
 const authRoutes = require('./routes/auth.routes');
-const userRoutes = require('./routes/user.routes');
 const adminRoutes = require('./routes/admin.routes');
+const userRoutes = require('./routes/user.routes');
 const filmRoutes = require('./routes/film.routes');
+const { db } = require('./db');
 const { errorHandler } = require('./middleware/error');
 const { authMiddleware } = require('./middleware/auth');
 
@@ -17,36 +13,24 @@ const app = express();
 
 // Configure CORS
 app.use(cors({
-  origin: ['https://filmila-g8dn.onrender.com', 'http://localhost:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: true,
   credentials: true
 }));
 
-// Security middleware
-app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false
-}));
-app.use(compression());
+// Parse JSON bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan('dev'));
 
-// Disable caching for all routes
-app.use((req, res, next) => {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-  res.set('Pragma', 'no-cache');
-  res.set('Expires', '0');
-  next();
-});
+// Serve static files from the frontend build directory in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../../frontend/build')));
+}
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use('/api/', limiter);
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', authMiddleware, userRoutes);
+app.use('/api/admin', authMiddleware, adminRoutes);
+app.use('/api/films', authMiddleware, filmRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
@@ -58,31 +42,12 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', authMiddleware, userRoutes);
-app.use('/api/admin', authMiddleware, adminRoutes);
-app.use('/api/films', authMiddleware, filmRoutes);
-
-// Serve static files from the React app with no-cache headers
-app.use(express.static(path.join(__dirname, '../../frontend/build'), {
-  etag: false,
-  lastModified: false,
-  setHeaders: (res, path) => {
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '0');
-  }
-}));
-
-// The "catchall" handler: for any request that doesn't
-// match one above, send back React's index.html file.
-app.get('*', (req, res) => {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-  res.set('Pragma', 'no-cache');
-  res.set('Expires', '0');
-  res.sendFile(path.join(__dirname, '../../frontend/build/index.html'));
-});
+// Serve React app for all other routes in production
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../frontend/build/index.html'));
+  });
+}
 
 // Error handling middleware
 app.use(errorHandler);
