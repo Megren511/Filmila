@@ -16,26 +16,36 @@ function Login() {
     try {
       setError('');
       setLoading(true);
+      console.log('Attempting login with:', { email });
       const user = await login(email, password);
       console.log('Login successful, redirecting user with role:', user.role);
       
       // Navigate based on user role
       switch (user.role) {
         case 'admin':
+          console.log('Redirecting admin to dashboard');
           navigate('/admin-dashboard');
           break;
         case 'filmmaker':
+          console.log('Redirecting filmmaker to dashboard');
           navigate('/filmmaker-dashboard');
           break;
         case 'viewer':
+          console.log('Redirecting viewer to dashboard');
           navigate('/viewer-dashboard');
           break;
         default:
+          console.log('Unknown role, redirecting to home');
           navigate('/');
       }
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err.response?.data?.message || 'Failed to log in');
+      console.error('Login error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        url: err.config?.url
+      });
+      setError(err.response?.data?.message || 'Failed to log in. Please check the console for details.');
     } finally {
       setLoading(false);
     }

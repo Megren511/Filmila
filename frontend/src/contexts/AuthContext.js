@@ -14,6 +14,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Set base URL for all axios requests
+    console.log('Setting axios base URL:', config.apiUrl);
     axios.defaults.baseURL = config.apiUrl;
     
     const token = localStorage.getItem('token');
@@ -37,8 +38,9 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      console.log('Attempting login for:', email);
+      console.log('Making login request to:', `${config.apiUrl}/auth/login`);
       const response = await axios.post('/auth/login', { email, password });
+      console.log('Login response:', response.data);
       const { token, user } = response.data;
       console.log('Login successful, user data:', user);
       localStorage.setItem('token', token);
@@ -47,7 +49,13 @@ export function AuthProvider({ children }) {
       setUser(user);
       return user;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url,
+        baseURL: axios.defaults.baseURL
+      });
       throw error;
     }
   };
