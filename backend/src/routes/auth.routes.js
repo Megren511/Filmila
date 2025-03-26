@@ -19,6 +19,10 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     console.log('Login attempt for:', email);
 
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
     // Find user
     const result = await db.query(
       'SELECT * FROM users WHERE email = $1',
@@ -47,6 +51,11 @@ router.post('/login', async (req, res) => {
     }
 
     // Create token
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not set');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+
     const token = jwt.sign(
       { 
         id: user.id,
@@ -74,7 +83,7 @@ router.post('/login', async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({ message: 'Server error during login' });
+    return res.status(500).json({ message: 'Server error during login', error: error.message });
   }
 });
 
@@ -82,6 +91,10 @@ router.post('/login', async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const { full_name, email, password, role } = req.body;
+
+    if (!full_name || !email || !password || !role) {
+      return res.status(400).json({ message: 'Full name, email, password, and role are required' });
+    }
 
     // Validate role
     const allowedRoles = ['viewer', 'filmmaker'];
@@ -114,6 +127,11 @@ router.post('/register', async (req, res) => {
     const user = result.rows[0];
 
     // Create token
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not set');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+
     const token = jwt.sign(
       { 
         id: user.id,
@@ -135,7 +153,7 @@ router.post('/register', async (req, res) => {
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -145,6 +163,10 @@ router.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
     console.log('Password reset requested for:', email);
     
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
     // Check if user exists
     const result = await db.query('SELECT id, email, status FROM users WHERE email = $1', [email]);
     
@@ -211,7 +233,7 @@ router.post('/forgot-password', async (req, res) => {
     res.json({ message: 'If an account exists with this email, you will receive password reset instructions.' });
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ message: 'An error occurred while processing your request. Please try again later.' });
+    res.status(500).json({ message: 'An error occurred while processing your request. Please try again later.', error: error.message });
   }
 });
 
@@ -219,6 +241,10 @@ router.post('/forgot-password', async (req, res) => {
 router.post('/reset-password', async (req, res) => {
   try {
     const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: 'Token and new password are required' });
+    }
 
     // Find user with valid reset token
     const result = await db.query(
@@ -243,7 +269,7 @@ router.post('/reset-password', async (req, res) => {
     res.json({ message: 'Password successfully reset' });
   } catch (error) {
     console.error('Reset password error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 

@@ -41,7 +41,17 @@ export function AuthProvider({ children }) {
       console.log('Making login request to:', `${config.apiUrl}/auth/login`);
       const response = await axios.post('/auth/login', { email, password });
       console.log('Login response:', response.data);
+      
+      if (!response.data || !response.data.user) {
+        throw new Error('Invalid response from server: missing user data');
+      }
+      
       const { token, user } = response.data;
+      
+      if (!user || !user.role) {
+        throw new Error('Invalid user data: missing role');
+      }
+      
       console.log('Login successful, user data:', user);
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
@@ -56,7 +66,17 @@ export function AuthProvider({ children }) {
         url: error.config?.url,
         baseURL: axios.defaults.baseURL
       });
-      throw error;
+      
+      // Throw a more informative error
+      if (error.response?.status === 401) {
+        throw new Error('Invalid email or password');
+      } else if (error.response?.status === 403) {
+        throw new Error('Account is not active');
+      } else if (!error.response) {
+        throw new Error('Unable to connect to server. Please try again later.');
+      } else {
+        throw new Error(error.response?.data?.message || error.message || 'An error occurred during login');
+      }
     }
   };
 
