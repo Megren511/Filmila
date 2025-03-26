@@ -50,33 +50,31 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { 
         id: user.id,
-        role: user.role
+        email: user.email,
+        role: user.role 
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: process.env.JWT_EXPIRY || '24h' }
     );
 
-    console.log('Login successful:', { id: user.id, email: user.email, role: user.role });
+    // Return user data without sensitive fields
+    const userData = {
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role,
+      status: user.status
+    };
 
-    // Update last login
-    await db.query(
-      'UPDATE users SET updated_at = NOW() WHERE id = $1',
-      [user.id]
-    );
-
-    // Send response
-    res.json({
+    console.log('Login successful, returning:', { user: userData });
+    return res.json({ 
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name,
-        role: user.role
-      }
+      user: userData
     });
+
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error during login' });
   }
 });
 
