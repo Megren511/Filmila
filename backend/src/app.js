@@ -13,7 +13,9 @@ const app = express();
 
 // Configure CORS
 app.use(cors({
-  origin: true,
+  origin: ['https://filmila.onrender.com', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
@@ -36,9 +38,9 @@ app.use('/api/films', authMiddleware, filmRoutes);
 app.get('/api/health', async (req, res) => {
   try {
     await db.query('SELECT 1');
-    res.json({ status: 'healthy', database: 'connected' });
+    res.json({ status: 'ok', message: 'Database connection successful' });
   } catch (error) {
-    res.status(500).json({ status: 'unhealthy', database: 'disconnected' });
+    res.status(500).json({ status: 'error', message: 'Database connection failed' });
   }
 });
 
