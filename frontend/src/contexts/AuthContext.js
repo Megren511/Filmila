@@ -17,11 +17,20 @@ export function AuthProvider({ children }) {
     axios.defaults.baseURL = config.apiUrl;
     
     const token = localStorage.getItem('token');
-    if (token) {
-      const userData = JSON.parse(localStorage.getItem('user'));
-      console.log('Restoring auth state from localStorage:', userData);
-      setUser(userData);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    const storedUser = localStorage.getItem('user');
+    
+    if (token && storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        console.log('Restoring auth state from localStorage:', userData);
+        setUser(userData);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      } catch (error) {
+        console.error('Error parsing stored user data:', error);
+        // Clear invalid data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
     }
     setLoading(false);
   }, []);
