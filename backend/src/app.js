@@ -24,7 +24,10 @@ app.use(cors({
 }));
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -50,25 +53,19 @@ app.get('/api/health', async (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
-app.use('/api/films', filmRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', authMiddleware, adminRoutes);
+app.use('/api/films', authMiddleware, filmRoutes);
 
-// Serve static files from frontend build directory in production
-if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.join(__dirname, '../../frontend/build');
-  app.use(express.static(frontendPath));
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../../frontend/build')));
 
-  // Handle React routing, return all requests to React app
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
-  });
-}
-
-// Error handling
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something broke!' });
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/build/index.html'));
 });
+
+// Error handling middleware
 app.use(errorHandler);
 
 module.exports = app;
