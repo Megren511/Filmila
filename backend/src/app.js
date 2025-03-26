@@ -17,9 +17,9 @@ const app = express();
 
 // Configure CORS
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://filmila-g8dn.onrender.com', 'https://filmila.com', 'http://localhost:3000']
-    : 'http://localhost:3000',
+  origin: ['https://filmila-g8dn.onrender.com', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
