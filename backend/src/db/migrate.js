@@ -12,6 +12,9 @@ async function migrate() {
         full_name VARCHAR(255) NOT NULL,
         role VARCHAR(20) NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin', 'filmer')),
         status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'banned')),
+        status_reason TEXT,
+        status_updated_at TIMESTAMP WITH TIME ZONE,
+        status_updated_by INTEGER,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
@@ -41,6 +44,61 @@ async function migrate() {
       );
     `);
     console.log('Films table created successfully');
+
+    // Create views table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS views (
+        id SERIAL PRIMARY KEY,
+        film_id INTEGER NOT NULL REFERENCES films(id),
+        viewer_id INTEGER NOT NULL REFERENCES users(id),
+        viewed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        duration_watched INTEGER DEFAULT 0,
+        price DECIMAL(10,2) DEFAULT 0.00,
+        CONSTRAINT valid_view_price CHECK (price >= 0)
+      );
+    `);
+    console.log('Views table created successfully');
+
+    // Create likes table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS likes (
+        id SERIAL PRIMARY KEY,
+        film_id INTEGER NOT NULL REFERENCES films(id),
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(film_id, user_id)
+      );
+    `);
+    console.log('Likes table created successfully');
+
+    // Create reports table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS reports (
+        id SERIAL PRIMARY KEY,
+        film_id INTEGER REFERENCES films(id),
+        reported_user_id INTEGER REFERENCES users(id),
+        reporter_id INTEGER NOT NULL REFERENCES users(id),
+        reason TEXT NOT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'dismissed')),
+        action_taken TEXT,
+        admin_notes TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        resolved_at TIMESTAMP WITH TIME ZONE,
+        resolved_by INTEGER REFERENCES users(id)
+      );
+    `);
+    console.log('Reports table created successfully');
+
+    // Create platform_settings table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS platform_settings (
+        key VARCHAR(50) PRIMARY KEY,
+        value JSONB NOT NULL,
+        updated_by INTEGER REFERENCES users(id),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('Platform settings table created successfully');
 
     // Create update_timestamp function
     await db.query(`
@@ -77,10 +135,29 @@ async function migrate() {
     // Create admin user if not exists
     await db.query(`
       INSERT INTO users (email, password_hash, full_name, role, status)
-      VALUES ('admin@filmila.com', '$2a$10$YourHashedPasswordHere', 'Admin User', 'admin', 'active')
+      VALUES (
+        'admin@filmila.com', 
+        '$2a$10$YourHashedPasswordHere', 
+        'Admin User', 
+        'admin', 
+        'active'
+      )
       ON CONFLICT (email) DO NOTHING;
     `);
     console.log('Admin user created successfully');
+
+    // Create indexes for better performance
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_films_filmer_id ON films(filmer_id);
+      CREATE INDEX IF NOT EXISTS idx_films_status ON films(status);
+      CREATE INDEX IF NOT EXISTS idx_views_film_id ON views(film_id);
+      CREATE INDEX IF NOT EXISTS idx_views_viewer_id ON views(viewer_id);
+      CREATE INDEX IF NOT EXISTS idx_likes_film_id ON likes(film_id);
+      CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id);
+      CREATE INDEX IF NOT EXISTS idx_reports_film_id ON reports(film_id);
+      CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
+    `);
+    console.log('Indexes created successfully');
 
     console.log('All migrations completed successfully');
   } catch (error) {

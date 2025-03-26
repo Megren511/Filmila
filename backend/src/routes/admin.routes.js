@@ -22,7 +22,9 @@ router.get('/verify', async (req, res) => {
 router.get('/films/pending', async (req, res) => {
   try {
     const films = await db.query(
-      `SELECT f.*, u.full_name as filmer_name
+      `SELECT f.*, u.full_name as filmer_name,
+              (SELECT COUNT(*) FROM views WHERE film_id = f.id) as view_count,
+              (SELECT COUNT(*) FROM likes WHERE film_id = f.id) as like_count
        FROM films f
        JOIN users u ON f.filmer_id = u.id
        WHERE f.status = 'pending'
@@ -61,14 +63,34 @@ router.put('/films/:id/status', async (req, res) => {
   }
 });
 
-// Get all users
+// Get all users with stats
 router.get('/users', async (req, res) => {
   try {
-    const users = await db.query(
-      `SELECT id, email, full_name, role, status, created_at, updated_at
-       FROM users
-       ORDER BY created_at DESC`
-    );
+    const users = await db.query(`
+      SELECT 
+        u.id, u.email, u.full_name, u.role, u.status, 
+        u.created_at, u.updated_at,
+        COALESCE(f.film_count, 0) as film_count,
+        COALESCE(v.view_count, 0) as view_count,
+        COALESCE(l.like_count, 0) as like_count
+      FROM users u
+      LEFT JOIN (
+        SELECT filmer_id, COUNT(*) as film_count 
+        FROM films 
+        GROUP BY filmer_id
+      ) f ON u.id = f.filmer_id
+      LEFT JOIN (
+        SELECT viewer_id, COUNT(*) as view_count 
+        FROM views 
+        GROUP BY viewer_id
+      ) v ON u.id = v.viewer_id
+      LEFT JOIN (
+        SELECT user_id, COUNT(*) as like_count 
+        FROM likes 
+        GROUP BY user_id
+      ) l ON u.id = l.user_id
+      ORDER BY u.created_at DESC
+    `);
     res.json(users.rows);
   } catch (error) {
     console.error('Error getting users:', error);
@@ -80,15 +102,21 @@ router.get('/users', async (req, res) => {
 router.put('/users/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, reason } = req.body;
 
     if (!['active', 'inactive', 'banned'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
     await db.query(
-      'UPDATE users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [status, id]
+      `UPDATE users 
+       SET status = $1, 
+           status_reason = $2,
+           status_updated_at = CURRENT_TIMESTAMP,
+           status_updated_by = $3,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $4`,
+      [status, reason || null, req.user.id, id]
     );
 
     res.json({ message: 'User status updated successfully' });
@@ -109,8 +137,9 @@ router.get('/statistics', async (req, res) => {
         (SELECT COUNT(*) FROM films WHERE status = 'pending') as pending_films,
         (SELECT COUNT(*) FROM films WHERE status = 'approved') as approved_films,
         (SELECT COUNT(*) FROM films WHERE status = 'rejected') as rejected_films,
-        (SELECT COALESCE(SUM(views), 0) FROM films) as total_views,
-        (SELECT COALESCE(SUM(likes), 0) FROM films) as total_likes
+        (SELECT COUNT(*) FROM views) as total_views,
+        (SELECT COUNT(*) FROM likes) as total_likes,
+        (SELECT COALESCE(SUM(price), 0) FROM views) as total_revenue
     `);
 
     res.json(stats.rows[0]);
@@ -120,7 +149,28 @@ router.get('/statistics', async (req, res) => {
   }
 });
 
-// Get reported content
+// Get revenue chart data
+router.get('/revenue/chart', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        DATE_TRUNC('day', viewed_at) as date,
+        COUNT(*) as views,
+        COALESCE(SUM(price), 0) as revenue
+      FROM views
+      WHERE viewed_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
+      GROUP BY DATE_TRUNC('day', viewed_at)
+      ORDER BY date ASC
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching revenue data:', error);
+    res.status(500).json({ message: 'Failed to fetch revenue data' });
+  }
+});
+
+// Get reports
 router.get('/reports', async (req, res) => {
   try {
     const reports = await db.query(`
@@ -149,6 +199,10 @@ router.put('/reports/:id', async (req, res) => {
   const { status, action, notes } = req.body;
 
   try {
+    if (!['resolved', 'dismissed'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
     const result = await db.query(
       `UPDATE reports 
        SET status = $1,
@@ -194,93 +248,6 @@ router.put('/settings', async (req, res) => {
   } catch (error) {
     console.error('Error updating settings:', error);
     res.status(500).json({ message: 'Failed to update settings' });
-  }
-});
-
-// Get revenue data for charts
-router.get('/revenue/chart', async (req, res) => {
-  try {
-    const revenueData = await db.query(`
-      SELECT 
-        DATE_TRUNC('day', viewed_at) as date,
-        COUNT(*) as views,
-        SUM(price) as revenue
-      FROM views
-      WHERE viewed_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
-      GROUP BY DATE_TRUNC('day', viewed_at)
-      ORDER BY date ASC
-    `);
-
-    res.json(revenueData.rows);
-  } catch (error) {
-    console.error('Error fetching revenue data:', error);
-    res.status(500).json({ message: 'Failed to fetch revenue data' });
-  }
-});
-
-// Get all users with filters
-router.get('/users', async (req, res) => {
-  const { role, status, search } = req.query;
-  try {
-    let query = `
-      SELECT 
-        id, email, full_name, role, status, 
-        created_at, updated_at,
-        (SELECT COUNT(*) FROM films WHERE filmer_id = users.id) as films_count,
-        (SELECT COUNT(*) FROM views WHERE viewer_id = users.id) as views_count
-      FROM users
-      WHERE 1=1
-    `;
-    const params = [];
-
-    if (role) {
-      params.push(role);
-      query += ` AND role = $${params.length}`;
-    }
-    if (status) {
-      params.push(status);
-      query += ` AND status = $${params.length}`;
-    }
-    if (search) {
-      params.push(`%${search}%`);
-      query += ` AND (full_name ILIKE $${params.length} OR email ILIKE $${params.length})`;
-    }
-
-    query += ' ORDER BY created_at DESC';
-
-    const users = await db.query(query, params);
-    res.json(users.rows);
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ message: 'Failed to fetch users' });
-  }
-});
-
-// Update user status
-router.put('/users/:id/status', async (req, res) => {
-  const { id } = req.params;
-  const { status, reason } = req.body;
-
-  try {
-    const result = await db.query(
-      `UPDATE users 
-       SET status = $1, 
-           status_reason = $2,
-           status_updated_at = CURRENT_TIMESTAMP,
-           status_updated_by = $3
-       WHERE id = $4
-       RETURNING *`,
-      [status, reason, req.user.id, id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating user status:', error);
-    res.status(500).json({ message: 'Failed to update user status' });
   }
 });
 
