@@ -97,63 +97,91 @@ router.post('/register', async (req, res) => {
     }
 
     // Validate role
-    const allowedRoles = ['viewer', 'filmmaker'];
+    const allowedRoles = ['user', 'filmer'];
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
 
-    // Check if user exists
+    // Check if email already exists
     const existingUser = await db.query(
-      'SELECT * FROM users WHERE email = $1',
+      'SELECT id FROM users WHERE email = $1',
       [email]
     );
 
     if (existingUser.rows.length > 0) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: 'Email already registered' });
     }
 
     // Hash password
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const password_hash = await bcrypt.hash(password, salt);
 
     // Create user
     const result = await db.query(
-      `INSERT INTO users (full_name, email, password_hash, role, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())
+      `INSERT INTO users (full_name, email, password_hash, role, status)
+       VALUES ($1, $2, $3, $4, 'active')
        RETURNING id, email, full_name, role, status`,
-      [full_name, email, hashedPassword, role, 'active']
+      [full_name, email, password_hash, role]
     );
 
     const user = result.rows[0];
 
     // Create token
-    if (!process.env.JWT_SECRET) {
-      console.error('JWT_SECRET is not set');
-      return res.status(500).json({ message: 'Server configuration error' });
-    }
-
     const token = jwt.sign(
       { 
         id: user.id,
-        role: user.role
+        email: user.email,
+        role: user.role 
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: process.env.JWT_EXPIRY || '24h' }
     );
 
-    res.status(201).json({
+    return res.status(201).json({
+      message: 'Registration successful',
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name,
-        role: user.role,
-        status: user.status
-      }
+      user
     });
+
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    return res.status(500).json({ message: 'Server error during registration' });
+  }
+});
+
+// Verify token route
+router.get('/verify', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const result = await db.query(
+      'SELECT id, email, full_name, role, status FROM users WHERE id = $1',
+      [decoded.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = result.rows[0];
+    if (user.status !== 'active') {
+      return res.status(403).json({ message: 'Account is not active' });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expired' });
+    }
+    return res.status(500).json({ message: 'Server error during verification' });
   }
 });
 
