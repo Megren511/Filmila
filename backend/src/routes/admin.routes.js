@@ -23,24 +23,14 @@ router.get('/statistics', async (req, res) => {
   try {
     console.log('Fetching admin statistics...');
     
-    // Check if reviews table exists
-    const checkReviewsTable = await db.query(`
-      SELECT EXISTS (
-        SELECT 1 
-        FROM information_schema.tables 
-        WHERE table_name = 'reviews'
-      );
-    `);
-    const reviewsTableExists = checkReviewsTable.rows[0].exists;
-
     // Get basic statistics
     const basicStats = await db.query(`
       SELECT
-        (SELECT COUNT(*) FROM films) as total_films,
-        (SELECT COUNT(*) FROM films WHERE status = 'pending') as pending_films,
-        (SELECT COUNT(*) FROM users WHERE role = 'filmmaker') as total_filmmakers,
-        (SELECT COUNT(*) FROM users WHERE role = 'viewer') as total_viewers,
-        (SELECT COUNT(*) FROM views) as total_views
+        COALESCE((SELECT COUNT(*) FROM films), 0) as total_films,
+        COALESCE((SELECT COUNT(*) FROM films WHERE status = 'pending'), 0) as pending_films,
+        COALESCE((SELECT COUNT(*) FROM users WHERE role = 'filmmaker'), 0) as total_filmmakers,
+        COALESCE((SELECT COUNT(*) FROM users WHERE role = 'viewer'), 0) as total_viewers,
+        COALESCE((SELECT COUNT(*) FROM views), 0) as total_views
     `);
 
     // Get revenue statistics
@@ -48,21 +38,6 @@ router.get('/statistics', async (req, res) => {
       SELECT COALESCE(SUM(CAST(price AS DECIMAL)), 0) as total_revenue
       FROM views
     `);
-
-    // Get rating statistics if reviews table exists
-    let averageRating = 0;
-    let totalReviews = 0;
-
-    if (reviewsTableExists) {
-      const ratingStats = await db.query(`
-        SELECT 
-          COALESCE(AVG(rating), 0) as average_rating,
-          COUNT(*) as total_reviews
-        FROM reviews
-      `);
-      averageRating = parseFloat(ratingStats.rows[0]?.average_rating) || 0;
-      totalReviews = parseInt(ratingStats.rows[0]?.total_reviews) || 0;
-    }
 
     // Combine and format results
     const result = {
@@ -72,9 +47,24 @@ router.get('/statistics', async (req, res) => {
       total_viewers: parseInt(basicStats.rows[0]?.total_viewers) || 0,
       total_views: parseInt(basicStats.rows[0]?.total_views) || 0,
       total_revenue: parseFloat(revenueStats.rows[0]?.total_revenue) || 0,
-      average_rating: averageRating,
-      total_reviews: totalReviews
+      average_rating: 0,
+      total_reviews: 0
     };
+
+    // Try to get rating statistics if reviews table exists
+    try {
+      const ratingStats = await db.query(`
+        SELECT 
+          COALESCE(AVG(rating), 0) as average_rating,
+          COUNT(*) as total_reviews
+        FROM reviews
+      `);
+      result.average_rating = parseFloat(ratingStats.rows[0]?.average_rating) || 0;
+      result.total_reviews = parseInt(ratingStats.rows[0]?.total_reviews) || 0;
+    } catch (error) {
+      // If reviews table doesn't exist, we'll use the default values
+      console.log('Reviews table not found, using default values');
+    }
 
     console.log('Admin statistics:', result);
     res.json(result);
@@ -89,8 +79,8 @@ router.get('/films/pending', async (req, res) => {
   try {
     const films = await db.query(
       `SELECT f.*, u.full_name as filmer_name,
-              (SELECT COUNT(*) FROM views WHERE film_id = f.id) as view_count,
-              (SELECT COUNT(*) FROM likes WHERE film_id = f.id) as like_count
+              COALESCE((SELECT COUNT(*) FROM views WHERE film_id = f.id), 0) as view_count,
+              COALESCE((SELECT COUNT(*) FROM likes WHERE film_id = f.id), 0) as like_count
        FROM films f
        JOIN users u ON f.filmer_id = u.id
        WHERE f.status = 'pending'
