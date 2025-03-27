@@ -18,6 +18,11 @@ async function runMigration(filePath) {
     await pool.query(sql);
     console.log(`Successfully ran migration: ${path.basename(filePath)}`);
   } catch (error) {
+    // Skip errors about existing tables/columns
+    if (error.code === '42P07' || error.code === '42701') {
+      console.log(`Skipping migration ${path.basename(filePath)} - table/column already exists`);
+      return;
+    }
     console.error(`Error running migration ${path.basename(filePath)}:`, error);
     throw error;
   }
