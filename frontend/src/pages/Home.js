@@ -10,7 +10,7 @@ function Home() {
     e.preventDefault();
     // Store email in localStorage to use it in the register page
     localStorage.setItem('tempEmail', email);
-    navigate('/user-type');
+    navigate('/register', { state: { email } });
   };
 
   return (
@@ -18,7 +18,7 @@ function Home() {
       <div className="overlay"></div>
       <div className="content">
         <h1 className="title">Filmila</h1>
-        <p className="subtitle">Your gateway to independent cinema</p>
+        <p className="subtitle">Connect. Watch. Create. Short Films.</p>
         
         <form onSubmit={handleSubmit} className="email-form">
           <input
