@@ -18,6 +18,42 @@ router.get('/verify', async (req, res) => {
   }
 });
 
+// Get admin statistics
+router.get('/statistics', async (req, res) => {
+  try {
+    console.log('Fetching admin statistics...');
+    const stats = await db.query(`
+      SELECT
+        (SELECT COUNT(*) FROM films) as total_films,
+        (SELECT COUNT(*) FROM films WHERE status = 'pending') as pending_films,
+        (SELECT COUNT(*) FROM users WHERE role = 'filmmaker') as total_filmmakers,
+        (SELECT COUNT(*) FROM users WHERE role = 'viewer') as total_viewers,
+        (SELECT COALESCE(SUM(CAST(price AS DECIMAL)), 0) FROM views) as total_revenue,
+        (SELECT COUNT(*) FROM views) as total_views,
+        (SELECT COALESCE(AVG(CAST(rating AS DECIMAL)), 0) FROM reviews) as average_rating,
+        (SELECT COUNT(*) FROM reviews) as total_reviews
+    `);
+
+    // Convert numeric strings to numbers and ensure defaults
+    const result = {
+      total_films: parseInt(stats.rows[0]?.total_films) || 0,
+      pending_films: parseInt(stats.rows[0]?.pending_films) || 0,
+      total_filmmakers: parseInt(stats.rows[0]?.total_filmmakers) || 0,
+      total_viewers: parseInt(stats.rows[0]?.total_viewers) || 0,
+      total_revenue: parseFloat(stats.rows[0]?.total_revenue) || 0,
+      total_views: parseInt(stats.rows[0]?.total_views) || 0,
+      average_rating: parseFloat(stats.rows[0]?.average_rating) || 0,
+      total_reviews: parseInt(stats.rows[0]?.total_reviews) || 0
+    };
+
+    console.log('Admin statistics:', result);
+    res.json(result);
+  } catch (error) {
+    console.error('Error getting admin statistics:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get pending film approvals
 router.get('/films/pending', async (req, res) => {
   try {
@@ -91,7 +127,22 @@ router.get('/users', async (req, res) => {
       ) l ON u.id = l.user_id
       ORDER BY u.created_at DESC
     `);
-    res.json(users.rows);
+
+    // Convert numeric strings to numbers
+    const result = users.rows.map(user => ({
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role,
+      status: user.status,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+      film_count: parseInt(user.film_count),
+      view_count: parseInt(user.view_count),
+      like_count: parseInt(user.like_count)
+    }));
+
+    res.json(result);
   } catch (error) {
     console.error('Error getting users:', error);
     res.status(500).json({ message: 'Server error' });
@@ -126,47 +177,33 @@ router.put('/users/:id/status', async (req, res) => {
   }
 });
 
-// Get admin dashboard statistics
-router.get('/statistics', async (req, res) => {
-  try {
-    const stats = await db.query(`
-      SELECT
-        (SELECT COUNT(*) FROM users WHERE role = 'user') as total_users,
-        (SELECT COUNT(*) FROM users WHERE role = 'filmer') as total_filmers,
-        (SELECT COUNT(*) FROM films) as total_films,
-        (SELECT COUNT(*) FROM films WHERE status = 'pending') as pending_films,
-        (SELECT COUNT(*) FROM films WHERE status = 'approved') as approved_films,
-        (SELECT COUNT(*) FROM films WHERE status = 'rejected') as rejected_films,
-        (SELECT COUNT(*) FROM views) as total_views,
-        (SELECT COUNT(*) FROM likes) as total_likes,
-        (SELECT COALESCE(SUM(price), 0) FROM views) as total_revenue
-    `);
-
-    res.json(stats.rows[0]);
-  } catch (error) {
-    console.error('Error getting admin statistics:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 // Get revenue chart data
 router.get('/revenue/chart', async (req, res) => {
   try {
+    console.log('Fetching revenue chart data...');
     const result = await db.query(`
       SELECT 
         DATE_TRUNC('day', viewed_at) as date,
         COUNT(*) as views,
-        COALESCE(SUM(price), 0) as revenue
+        COALESCE(SUM(CAST(price AS DECIMAL)), 0) as revenue
       FROM views
       WHERE viewed_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
       GROUP BY DATE_TRUNC('day', viewed_at)
       ORDER BY date ASC
     `);
 
-    res.json(result.rows);
+    // Convert numeric strings to numbers and format dates
+    const data = result.rows.map(row => ({
+      date: row.date,
+      views: parseInt(row.views) || 0,
+      revenue: parseFloat(row.revenue) || 0
+    }));
+
+    console.log('Revenue chart data:', data);
+    res.json(data);
   } catch (error) {
-    console.error('Error fetching revenue data:', error);
-    res.status(500).json({ message: 'Failed to fetch revenue data' });
+    console.error('Error getting revenue chart data:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

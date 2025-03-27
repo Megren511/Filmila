@@ -13,6 +13,7 @@
   "dependencies": {
     "@sendgrid/mail": "^8.1.4",
     "aws-sdk": "^2.1550.0",
+    "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "compression": "^1.8.0",
     "cors": "^2.8.5",

@@ -198,23 +198,23 @@ function AdminDashboard() {
             <div className="stats-grid">
               <div className="stat-card">
                 <h3>Total Films</h3>
-                <p>{stats.total_films}</p>
-                <small>{stats.pending_films} pending</small>
+                <p>{stats.total_films || 0}</p>
+                <small>{stats.pending_films || 0} pending</small>
               </div>
               <div className="stat-card">
                 <h3>Total Users</h3>
-                <p>{stats.total_filmmakers + stats.total_viewers}</p>
-                <small>{stats.total_filmmakers} filmmakers, {stats.total_viewers} viewers</small>
+                <p>{(stats.total_filmmakers || 0) + (stats.total_viewers || 0)}</p>
+                <small>{stats.total_filmmakers || 0} filmmakers, {stats.total_viewers || 0} viewers</small>
               </div>
               <div className="stat-card">
                 <h3>Total Revenue</h3>
-                <p>${stats.total_revenue.toFixed(2)}</p>
-                <small>{stats.total_views} total views</small>
+                <p>${(stats.total_revenue || 0).toFixed(2)}</p>
+                <small>{stats.total_views || 0} total views</small>
               </div>
               <div className="stat-card">
                 <h3>Average Rating</h3>
-                <p>{stats.average_rating.toFixed(1)}</p>
-                <small>{stats.total_reviews} reviews</small>
+                <p>{(stats.average_rating || 0).toFixed(1)}</p>
+                <small>{stats.total_reviews || 0} reviews</small>
               </div>
             </div>
 
@@ -255,41 +255,17 @@ function AdminDashboard() {
                     </button>
                     <button
                       className="btn-reject"
-                      onClick={() => handleFilmApproval(film.id, 'rejected', 'Content guidelines violation')}
+                      onClick={() => handleFilmApproval(film.id, 'rejected')}
                     >
                       Reject
                     </button>
                   </div>
                 </div>
               ))}
+              {pendingFilms.length === 0 && (
+                <p className="no-data">No pending films to review</p>
+              )}
             </div>
-          </div>
-        )}
-
-        {activeTab === 'settings' && (
-          <div className="settings-section">
-            <h2>Platform Settings</h2>
-            <form className="settings-form">
-              <div className="form-group">
-                <label>Platform Fee (%)</label>
-                <input type="number" min="0" max="100" step="0.1" />
-              </div>
-              <div className="form-group">
-                <label>Minimum Payout Amount ($)</label>
-                <input type="number" min="0" step="0.01" />
-              </div>
-              <div className="form-group">
-                <label>Maximum Film Size (MB)</label>
-                <input type="number" min="0" step="1" />
-              </div>
-              <div className="form-group">
-                <label>Allowed File Types</label>
-                <input type="text" placeholder="mp4,mov,avi" />
-              </div>
-              <button type="submit" className="btn-save">
-                Save Settings
-              </button>
-            </form>
           </div>
         )}
       </main>
