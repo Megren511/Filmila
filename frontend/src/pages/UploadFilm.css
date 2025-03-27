@@ -1,19 +1,33 @@
 .upload-film {
-  padding: 2rem;
   max-width: 800px;
-  margin: 0 auto;
-}
-
-.upload-container {
-  background: white;
+  margin: 2rem auto;
   padding: 2rem;
+  background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.upload-container h1 {
-  margin: 0 0 2rem;
-  color: #2c3e50;
+.upload-film h1 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #333;
+}
+
+.error-message {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.success-message {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
   text-align: center;
 }
 
@@ -21,132 +35,75 @@
   margin-bottom: 1.5rem;
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-label {
+.form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #2c3e50;
-  font-weight: 500;
+  font-weight: bold;
+  color: #333;
 }
 
-input[type="text"],
-input[type="number"],
-textarea,
-select {
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
-  transition: border-color 0.2s;
 }
 
-input[type="text"]:focus,
-input[type="number"]:focus,
-textarea:focus,
-select:focus {
-  border-color: #3498db;
-  outline: none;
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
 }
 
-.file-upload {
-  border: 2px dashed #ddd;
-  padding: 1.5rem;
-  border-radius: 4px;
-  text-align: center;
-  transition: border-color 0.2s;
-}
-
-.file-upload:hover {
-  border-color: #3498db;
-}
-
-.file-upload input[type="file"] {
-  width: 100%;
-}
-
-.file-info {
-  margin: 0.5rem 0 0;
-  font-size: 0.9rem;
-  color: #666;
+.form-group input[type="file"] {
+  display: block;
+  margin-top: 0.5rem;
 }
 
 .poster-preview {
-  max-width: 200px;
-  max-height: 200px;
   margin-top: 1rem;
+  max-width: 300px;
   border-radius: 4px;
+  overflow: hidden;
+}
+
+.poster-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 .form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
+  text-align: center;
   margin-top: 2rem;
 }
 
-.error-message {
-  background: #ff6b6b;
+.btn-primary {
+  background-color: #007bff;
   color: white;
-  padding: 1rem;
-  border-radius: 4px;
-  margin-bottom: 1.5rem;
-}
-
-.success-message {
-  background: #51cf66;
-  color: white;
-  padding: 1rem;
-  border-radius: 4px;
-  margin-bottom: 1.5rem;
-}
-
-.btn-primary,
-.btn-secondary {
-  padding: 0.75rem 1.5rem;
   border: none;
+  padding: 0.75rem 2rem;
   border-radius: 4px;
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
-.btn-primary {
-  background: #3498db;
-  color: white;
-}
-
 .btn-primary:hover {
-  background: #2980b9;
+  background-color: #0056b3;
 }
 
 .btn-primary:disabled {
-  background: #bdc3c7;
+  background-color: #ccc;
   cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: #ecf0f1;
-  color: #2c3e50;
-}
-
-.btn-secondary:hover {
-  background: #bdc3c7;
 }
 
 @media (max-width: 768px) {
   .upload-film {
     padding: 1rem;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
   }
 
   .form-actions {

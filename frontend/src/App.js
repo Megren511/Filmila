@@ -30,47 +30,34 @@ function AppRoutes() {
       // Redirect to appropriate dashboard based on role
       switch (user.role) {
         case 'admin':
-          console.log('PrivateRoute - Redirecting admin to /admin-dashboard');
           return <Navigate to="/admin-dashboard" replace />;
         case 'filmmaker':
-          console.log('PrivateRoute - Redirecting filmmaker to /filmmaker-dashboard');
           return <Navigate to="/filmmaker-dashboard" replace />;
         case 'viewer':
-          console.log('PrivateRoute - Redirecting viewer to /viewer-dashboard');
           return <Navigate to="/viewer-dashboard" replace />;
         default:
-          console.log('PrivateRoute - Unknown role, redirecting to login');
           return <Navigate to="/login" replace />;
       }
     }
 
-    console.log('PrivateRoute - Access granted');
     return children;
   };
 
   // Redirect to appropriate dashboard if user is logged in
   const AuthRoute = ({ children }) => {
-    console.log('AuthRoute - Current user:', user);
-
     if (user) {
-      console.log('AuthRoute - User is logged in, redirecting to appropriate dashboard');
       switch (user.role) {
         case 'admin':
-          console.log('AuthRoute - Redirecting admin to /admin-dashboard');
           return <Navigate to="/admin-dashboard" replace />;
         case 'filmmaker':
-          console.log('AuthRoute - Redirecting filmmaker to /filmmaker-dashboard');
           return <Navigate to="/filmmaker-dashboard" replace />;
         case 'viewer':
-          console.log('AuthRoute - Redirecting viewer to /viewer-dashboard');
           return <Navigate to="/viewer-dashboard" replace />;
         default:
-          console.log('AuthRoute - Unknown role, redirecting to login');
           return <Navigate to="/login" replace />;
       }
     }
 
-    console.log('AuthRoute - No user, showing login/register form');
     return children;
   };
 
@@ -98,15 +85,8 @@ function AppRoutes() {
               </AuthRoute>
             }
           />
-          <Route
-            path="/forgot-password"
-            element={
-              <AuthRoute>
-                <ForgotPassword />
-              </AuthRoute>
-            }
-          />
-
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          
           {/* Protected Routes */}
           <Route
             path="/admin-dashboard"
@@ -140,9 +120,6 @@ function AppRoutes() {
               </PrivateRoute>
             }
           />
-
-          {/* Catch-all route */}
-          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>

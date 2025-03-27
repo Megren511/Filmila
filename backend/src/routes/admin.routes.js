@@ -22,35 +22,65 @@ router.get('/verify', async (req, res) => {
 router.get('/statistics', async (req, res) => {
   try {
     console.log('Fetching admin statistics...');
-    const stats = await db.query(`
+    
+    // Check if reviews table exists
+    const checkReviewsTable = await db.query(`
+      SELECT EXISTS (
+        SELECT 1 
+        FROM information_schema.tables 
+        WHERE table_name = 'reviews'
+      );
+    `);
+    const reviewsTableExists = checkReviewsTable.rows[0].exists;
+
+    // Get basic statistics
+    const basicStats = await db.query(`
       SELECT
         (SELECT COUNT(*) FROM films) as total_films,
         (SELECT COUNT(*) FROM films WHERE status = 'pending') as pending_films,
         (SELECT COUNT(*) FROM users WHERE role = 'filmmaker') as total_filmmakers,
         (SELECT COUNT(*) FROM users WHERE role = 'viewer') as total_viewers,
-        (SELECT COALESCE(SUM(CAST(price AS DECIMAL)), 0) FROM views) as total_revenue,
-        (SELECT COUNT(*) FROM views) as total_views,
-        (SELECT COALESCE(AVG(CAST(rating AS DECIMAL)), 0) FROM reviews) as average_rating,
-        (SELECT COUNT(*) FROM reviews) as total_reviews
+        (SELECT COUNT(*) FROM views) as total_views
     `);
 
-    // Convert numeric strings to numbers and ensure defaults
+    // Get revenue statistics
+    const revenueStats = await db.query(`
+      SELECT COALESCE(SUM(CAST(price AS DECIMAL)), 0) as total_revenue
+      FROM views
+    `);
+
+    // Get rating statistics if reviews table exists
+    let averageRating = 0;
+    let totalReviews = 0;
+
+    if (reviewsTableExists) {
+      const ratingStats = await db.query(`
+        SELECT 
+          COALESCE(AVG(rating), 0) as average_rating,
+          COUNT(*) as total_reviews
+        FROM reviews
+      `);
+      averageRating = parseFloat(ratingStats.rows[0]?.average_rating) || 0;
+      totalReviews = parseInt(ratingStats.rows[0]?.total_reviews) || 0;
+    }
+
+    // Combine and format results
     const result = {
-      total_films: parseInt(stats.rows[0]?.total_films) || 0,
-      pending_films: parseInt(stats.rows[0]?.pending_films) || 0,
-      total_filmmakers: parseInt(stats.rows[0]?.total_filmmakers) || 0,
-      total_viewers: parseInt(stats.rows[0]?.total_viewers) || 0,
-      total_revenue: parseFloat(stats.rows[0]?.total_revenue) || 0,
-      total_views: parseInt(stats.rows[0]?.total_views) || 0,
-      average_rating: parseFloat(stats.rows[0]?.average_rating) || 0,
-      total_reviews: parseInt(stats.rows[0]?.total_reviews) || 0
+      total_films: parseInt(basicStats.rows[0]?.total_films) || 0,
+      pending_films: parseInt(basicStats.rows[0]?.pending_films) || 0,
+      total_filmmakers: parseInt(basicStats.rows[0]?.total_filmmakers) || 0,
+      total_viewers: parseInt(basicStats.rows[0]?.total_viewers) || 0,
+      total_views: parseInt(basicStats.rows[0]?.total_views) || 0,
+      total_revenue: parseFloat(revenueStats.rows[0]?.total_revenue) || 0,
+      average_rating: averageRating,
+      total_reviews: totalReviews
     };
 
     console.log('Admin statistics:', result);
     res.json(result);
   } catch (error) {
     console.error('Error getting admin statistics:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -69,6 +99,27 @@ router.get('/films/pending', async (req, res) => {
     res.json(films.rows);
   } catch (error) {
     console.error('Error getting pending films:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get revenue chart data
+router.get('/revenue/chart', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        DATE_TRUNC('day', viewed_at) as date,
+        COUNT(*) as views,
+        COALESCE(SUM(CAST(price AS DECIMAL)), 0) as revenue
+      FROM views
+      WHERE viewed_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
+      GROUP BY DATE_TRUNC('day', viewed_at)
+      ORDER BY date ASC
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error getting revenue chart data:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -173,36 +224,6 @@ router.put('/users/:id/status', async (req, res) => {
     res.json({ message: 'User status updated successfully' });
   } catch (error) {
     console.error('Error updating user status:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Get revenue chart data
-router.get('/revenue/chart', async (req, res) => {
-  try {
-    console.log('Fetching revenue chart data...');
-    const result = await db.query(`
-      SELECT 
-        DATE_TRUNC('day', viewed_at) as date,
-        COUNT(*) as views,
-        COALESCE(SUM(CAST(price AS DECIMAL)), 0) as revenue
-      FROM views
-      WHERE viewed_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
-      GROUP BY DATE_TRUNC('day', viewed_at)
-      ORDER BY date ASC
-    `);
-
-    // Convert numeric strings to numbers and format dates
-    const data = result.rows.map(row => ({
-      date: row.date,
-      views: parseInt(row.views) || 0,
-      revenue: parseFloat(row.revenue) || 0
-    }));
-
-    console.log('Revenue chart data:', data);
-    res.json(data);
-  } catch (error) {
-    console.error('Error getting revenue chart data:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

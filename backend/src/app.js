@@ -1,55 +1,41 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
+const { db, runAllMigrations } = require('./db');
 const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
 const userRoutes = require('./routes/user.routes');
 const filmRoutes = require('./routes/film.routes');
-const { db } = require('./db');
 const { errorHandler } = require('./middleware/error');
 const { authMiddleware } = require('./middleware/auth');
 
 const app = express();
 
-// Configure CORS
-app.use(cors({
-  origin: ['https://filmila.onrender.com', 'http://localhost:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
-
-// Parse JSON bodies
+// Middleware
+app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from the frontend build directory in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../../frontend/build')));
-}
-
-// API routes
+// Public routes
 app.use('/api/auth', authRoutes);
-app.use('/api/users', authMiddleware, userRoutes);
-app.use('/api/admin', authMiddleware, adminRoutes);
-app.use('/api/films', authMiddleware, filmRoutes);
+
+// Protected routes
+app.use('/api/admin', adminRoutes);
+app.use('/api/films', filmRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check endpoint
-app.get('/api/health', async (req, res) => {
-  try {
-    await db.query('SELECT 1');
-    res.json({ status: 'ok', message: 'Database connection successful' });
-  } catch (error) {
-    res.status(500).json({ status: 'error', message: 'Database connection failed' });
-  }
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
-// Serve React app for all other routes in production
-if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/build/index.html'));
+// Run migrations on startup
+runAllMigrations()
+  .then(() => {
+    console.log('Database migrations completed');
+  })
+  .catch((error) => {
+    console.error('Database migration failed:', error);
+    process.exit(1);
   });
-}
 
 // Error handling middleware
 app.use(errorHandler);

@@ -51,18 +51,13 @@ router.post('/login', async (req, res) => {
     }
 
     // Create token
-    if (!process.env.JWT_SECRET) {
-      console.error('JWT_SECRET is not set');
-      return res.status(500).json({ message: 'Server configuration error' });
-    }
-
     const token = jwt.sign(
       { 
         id: user.id,
         email: user.email,
         role: user.role 
       },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: process.env.JWT_EXPIRY || '24h' }
     );
 
@@ -97,31 +92,31 @@ router.post('/register', async (req, res) => {
     }
 
     // Validate role
-    const allowedRoles = ['user', 'filmer'];
+    const allowedRoles = ['viewer', 'filmmaker'];
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
 
-    // Check if email already exists
+    // Check if email exists
     const existingUser = await db.query(
-      'SELECT id FROM users WHERE email = $1',
+      'SELECT * FROM users WHERE email = $1',
       [email]
     );
 
     if (existingUser.rows.length > 0) {
-      return res.status(400).json({ message: 'Email already registered' });
+      return res.status(400).json({ message: 'Email already exists' });
     }
 
     // Hash password
     const salt = await bcrypt.genSalt(10);
-    const password_hash = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create user
     const result = await db.query(
-      `INSERT INTO users (full_name, email, password_hash, role, status)
-       VALUES ($1, $2, $3, $4, 'active')
-       RETURNING id, email, full_name, role, status`,
-      [full_name, email, password_hash, role]
+      `INSERT INTO users (full_name, email, password_hash, role)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, email, full_name, role`,
+      [full_name, email, hashedPassword, role]
     );
 
     const user = result.rows[0];
@@ -133,14 +128,18 @@ router.post('/register', async (req, res) => {
         email: user.email,
         role: user.role 
       },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: process.env.JWT_EXPIRY || '24h' }
     );
 
     return res.status(201).json({
-      message: 'Registration successful',
       token,
-      user
+      user: {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        role: user.role
+      }
     });
 
   } catch (error) {
@@ -157,7 +156,7 @@ router.get('/verify', async (req, res) => {
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     const result = await db.query(
       'SELECT id, email, full_name, role, status FROM users WHERE id = $1',
       [decoded.id]

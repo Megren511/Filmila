@@ -3,19 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import './UploadFilm.css';
 
-const GENRES = [
-  'Action', 'Comedy', 'Drama', 'Documentary', 'Horror',
-  'Romance', 'Sci-Fi', 'Thriller', 'Animation', 'Other'
-];
+const GENRES = ['Drama', 'Comedy', 'Action', 'Thriller', 'Horror', 'Documentary'];
+const MAX_PRICE = 20;
 
 function UploadFilm() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    synopsis: '',
     genre: '',
-    price: '',
-    tags: ''
+    price: ''
   });
   const [files, setFiles] = useState({
     film: null,
@@ -30,6 +28,13 @@ function UploadFilm() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'price') {
+      // Ensure price is not above MAX_PRICE
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue) && numValue > MAX_PRICE) {
+        return;
+      }
+    }
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -61,8 +66,10 @@ function UploadFilm() {
   const validateForm = () => {
     if (!formData.title.trim()) return 'Title is required';
     if (!formData.description.trim()) return 'Description is required';
+    if (!formData.synopsis.trim()) return 'Synopsis is required';
     if (!formData.genre) return 'Please select a genre';
     if (!formData.price || isNaN(formData.price)) return 'Please enter a valid price';
+    if (parseFloat(formData.price) > MAX_PRICE) return `Maximum price is $${MAX_PRICE}`;
     if (!files.film) return 'Please upload your film';
     if (!files.poster) return 'Please upload a poster';
     return null;
@@ -84,9 +91,9 @@ function UploadFilm() {
       const form = new FormData();
       form.append('title', formData.title);
       form.append('description', formData.description);
+      form.append('synopsis', formData.synopsis);
       form.append('genre', formData.genre);
       form.append('price', formData.price);
-      form.append('tags', formData.tags);
       form.append('film', files.film);
       form.append('poster', files.poster);
 
@@ -100,8 +107,8 @@ function UploadFilm() {
       setTimeout(() => {
         navigate('/filmmaker-dashboard');
       }, 2000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to upload film');
+    } catch (error) {
+      setError(error.response?.data?.message || 'Error uploading film');
     } finally {
       setLoading(false);
     }
@@ -109,133 +116,116 @@ function UploadFilm() {
 
   return (
     <div className="upload-film">
-      <div className="upload-container">
-        <h1>Upload Your Film</h1>
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
-        
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Film Title *</label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleInputChange}
-              placeholder="Enter your film's title"
-              maxLength="255"
-              required
-            />
-          </div>
+      <h1>Upload Short Film</h1>
+      
+      {error && <div className="error-message">{error}</div>}
+      {success && <div className="success-message">{success}</div>}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="title">Film Title</label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            value={formData.title}
+            onChange={handleInputChange}
+            placeholder="Enter film title"
+            required
+          />
+        </div>
 
-          <div className="form-group">
-            <label>Description & Synopsis *</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Provide a compelling description of your film"
-              rows="4"
-              required
-            />
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Genre *</label>
-              <select
-                name="genre"
-                value={formData.genre}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="">Select Genre</option>
-                {GENRES.map(genre => (
-                  <option key={genre} value={genre}>{genre}</option>
-                ))}
-              </select>
+        <div className="form-group">
+          <label htmlFor="poster">Upload Poster</label>
+          <input
+            type="file"
+            id="poster"
+            name="poster"
+            accept="image/*"
+            onChange={handleFileChange}
+            required
+          />
+          {previews.poster && (
+            <div className="poster-preview">
+              <img src={previews.poster} alt="Poster preview" />
             </div>
+          )}
+        </div>
 
-            <div className="form-group">
-              <label>Price (USD) *</label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleInputChange}
-                placeholder="2.99"
-                step="0.01"
-                min="0.99"
-                required
-              />
-            </div>
-          </div>
+        <div className="form-group">
+          <label htmlFor="film">Upload Film File</label>
+          <input
+            type="file"
+            id="film"
+            name="film"
+            accept="video/*"
+            onChange={handleFileChange}
+            required
+          />
+        </div>
 
-          <div className="form-group">
-            <label>Tags (Optional)</label>
-            <input
-              type="text"
-              name="tags"
-              value={formData.tags}
-              onChange={handleInputChange}
-              placeholder="Enter tags separated by commas"
-            />
-          </div>
+        <div className="form-group">
+          <label htmlFor="description">Description</label>
+          <textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleInputChange}
+            placeholder="Brief description of your film"
+            required
+          />
+        </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Upload Film File *</label>
-              <div className="file-upload">
-                <input
-                  type="file"
-                  name="film"
-                  onChange={handleFileChange}
-                  accept="video/*"
-                  required
-                />
-                <p className="file-info">Maximum size: 500MB</p>
-              </div>
-            </div>
+        <div className="form-group">
+          <label htmlFor="synopsis">Synopsis</label>
+          <textarea
+            id="synopsis"
+            name="synopsis"
+            value={formData.synopsis}
+            onChange={handleInputChange}
+            placeholder="Detailed synopsis of your film"
+            required
+          />
+        </div>
 
-            <div className="form-group">
-              <label>Upload Poster *</label>
-              <div className="file-upload">
-                <input
-                  type="file"
-                  name="poster"
-                  onChange={handleFileChange}
-                  accept="image/*"
-                  required
-                />
-                {previews.poster && (
-                  <img
-                    src={previews.poster}
-                    alt="Poster preview"
-                    className="poster-preview"
-                  />
-                )}
-              </div>
-            </div>
-          </div>
+        <div className="form-group">
+          <label htmlFor="genre">Genre</label>
+          <select
+            id="genre"
+            name="genre"
+            value={formData.genre}
+            onChange={handleInputChange}
+            required
+          >
+            <option value="">Select a genre</option>
+            {GENRES.map(genre => (
+              <option key={genre} value={genre}>{genre}</option>
+            ))}
+          </select>
+        </div>
 
-          <div className="form-actions">
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => navigate('/filmmaker-dashboard')}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={loading}
-            >
-              {loading ? 'Uploading...' : 'Submit for Approval'}
-            </button>
-          </div>
-        </form>
-      </div>
+        <div className="form-group">
+          <label htmlFor="price">Price (Max $20)</label>
+          <input
+            type="number"
+            id="price"
+            name="price"
+            value={formData.price}
+            onChange={handleInputChange}
+            placeholder="Enter price"
+            min="0"
+            max={MAX_PRICE}
+            step="0.01"
+            required
+          />
+        </div>
+
+        <div className="form-actions">
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Uploading...' : 'Submit for Approval'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
